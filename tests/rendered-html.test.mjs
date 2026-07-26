@@ -28,7 +28,8 @@ test("server-renders the artwork", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>hannah gao ✶<\/title>/);
-  assert.match(html, /src="\/artwork\/full-size-render\.jpg"/);
-  assert.match(html, /alt="Pencil drawing of a curled sleeping cat"/);
+  assert.equal(html.match(/src="\/artwork\//g)?.length, 29);
+  assert.match(html, /src="\/artwork\/01-fullsizerender-1\.jpg"/);
+  assert.match(html, /src="\/artwork\/29-the-walls-we-build\.jpg"/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });

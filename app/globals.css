@@ -11,6 +11,11 @@ body {
 }
 
 .gallery {
+  margin: 0;
+  padding: 0;
+}
+
+.artwork {
   display: grid;
   min-height: 100svh;
   margin: 0;
@@ -18,7 +23,7 @@ body {
   place-items: center;
 }
 
-.gallery img {
+.artwork img {
   display: block;
   width: auto;
   max-width: min(100%, 1500px);
