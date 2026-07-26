@@ -22,12 +22,13 @@ async function render() {
   );
 }
 
-test("server-renders a blank homepage", async () => {
+test("server-renders the artwork", async () => {
   const response = await render();
   assert.equal(response.status, 200);
 
   const html = await response.text();
   assert.match(html, /<title>hannah gao ✶<\/title>/);
-  assert.match(html, /<body><script[^>]*>.*?<\/script><\/body>/is);
+  assert.match(html, /src="\/artwork\/full-size-render\.jpg"/);
+  assert.match(html, /alt="Pencil drawing of a curled sleeping cat"/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });

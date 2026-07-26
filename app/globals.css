@@ -9,3 +9,20 @@ body {
   margin: 0;
   background: #fff;
 }
+
+.gallery {
+  display: grid;
+  min-height: 100svh;
+  margin: 0;
+  padding: clamp(20px, 4vw, 64px);
+  place-items: center;
+}
+
+.gallery img {
+  display: block;
+  width: auto;
+  max-width: min(100%, 1500px);
+  height: auto;
+  max-height: calc(100svh - clamp(40px, 8vw, 128px));
+  object-fit: contain;
+}
