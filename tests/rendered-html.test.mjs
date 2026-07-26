@@ -27,7 +27,7 @@ test("server-renders a blank homepage", async () => {
   assert.equal(response.status, 200);
 
   const html = await response.text();
-  assert.match(html, /<title>Hannah Gao<\/title>/i);
+  assert.match(html, /<title>hannah gao ✶<\/title>/);
   assert.match(html, /<body><script[^>]*>.*?<\/script><\/body>/is);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
