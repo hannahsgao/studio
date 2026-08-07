@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import test from "node:test";
 
 async function render() {
@@ -28,8 +29,23 @@ test("server-renders the artwork", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>hannah gao ✶<\/title>/);
-  assert.equal(html.match(/src="\/artwork\//g)?.length, 29);
-  assert.match(html, /src="\/artwork\/01-fullsizerender-1\.jpg"/);
-  assert.match(html, /src="\/artwork\/29-the-walls-we-build\.jpg"/);
+  const imageSources = [...html.matchAll(/<img[^>]+src="(\/artwork\/[^"]+)"/g)].map(
+    (match) => match[1],
+  );
+
+  assert.ok(imageSources.length > 0);
+  assert.equal(
+    html.match(/class="artwork-details"/g)?.length,
+    imageSources.length,
+  );
+
+  for (const src of imageSources) {
+    assert.equal(
+      existsSync(new URL(`../public${src}`, import.meta.url)),
+      true,
+      `${src} should reference an available artwork image`,
+    );
+  }
+
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });

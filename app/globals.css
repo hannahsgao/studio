@@ -6,6 +6,8 @@ body {
 body {
   margin: 0;
   background: #fff;
+  color: #202020;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 .gallery {
@@ -15,10 +17,14 @@ body {
 
 .artwork {
   display: grid;
+  box-sizing: border-box;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: clamp(16px, 2vw, 28px);
   min-height: 100svh;
   margin: 0;
   padding: clamp(20px, 4vw, 64px);
-  place-items: center;
+  align-items: center;
+  justify-items: center;
 }
 
 .artwork img {
@@ -26,6 +32,48 @@ body {
   width: auto;
   max-width: min(100%, 1500px);
   height: auto;
-  max-height: calc(100svh - clamp(40px, 8vw, 128px));
+  max-height: calc(100svh - clamp(112px, 14vw, 176px));
   object-fit: contain;
+}
+
+.artwork-details {
+  display: flex;
+  width: min(100%, 1500px);
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 12px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+.artwork-details h2,
+.artwork-details p {
+  margin: 0;
+  font: inherit;
+}
+
+.artwork-details h2 {
+  font-weight: 600;
+}
+
+.artwork-details p {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0 14px;
+  color: #666;
+  text-align: right;
+}
+
+@media (max-width: 560px) {
+  .artwork-details {
+    display: grid;
+    gap: 3px;
+  }
+
+  .artwork-details p {
+    justify-content: flex-start;
+    text-align: left;
+  }
 }
