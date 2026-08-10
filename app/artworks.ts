@@ -5,6 +5,8 @@ export type Artwork = {
   height: number | null;
   medium: string | null;
   year: string;
+  /** Use `about` to feature an image on the About page instead of the gallery. */
+  placement?: "gallery" | "about";
   /** Optional display-only scale: 0.8 renders the image at 80% width. */
   displayScale?: number;
 };
@@ -58,14 +60,14 @@ export const artworks: Artwork[] = [
     medium: "Oil on Board",
     year: "2024",
   },
-  {
-    src: "/artwork/landscape.jpg",
-    title: "Landscape",
-    width: 12,
-    height: 12,
-    medium: "Oil on Canvas",
-    year: "2022",
-  },
+  //{
+  //  src: "/artwork/landscape.jpg",
+  //  title: "Landscape",
+ //   width: 12,
+ //   height: 12,
+ //   medium: "Oil on Canvas",
+  //  year: "2022",
+  //},
   {
     src: "/artwork/boots.jpg",
     title: "Boots",
@@ -116,7 +118,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/studio-pic-stanford.jpg",
-    title: "Studio Pic — Stanford",
+    title: "Stanford studio",
     width: null,
     height: null,
     medium: null,
@@ -148,7 +150,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/DONTLOOKATME.jpg",
-    title: "DONT LOOK AT ME",
+    title: "DONTLOOK",
     width: 36,
     height: 48,
     medium: "Oil on Canvas",
@@ -156,11 +158,12 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/studio-pic.jpg",
-    title: "Studio Pic",
+    title: "home studio (basement closet)",
     width: null,
     height: null,
     medium: null,
     year: "2024",
+    placement: "about",
   },
   {
     src: "/artwork/heritage.jpg",
