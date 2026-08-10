@@ -9,6 +9,8 @@ export type Artwork = {
   placement?: "gallery" | "about";
   /** Optional display-only scale: 0.8 renders the image at 80% width. */
   displayScale?: number;
+  /** Set to false for detail or context photos that are not standalone works. */
+  scaleView?: boolean;
 };
 
 /**
@@ -87,8 +89,8 @@ export const artworks: Artwork[] = [
   {
     src: "/artwork/gotcha.jpg",
     title: "Gotcha",
-    width: 9,
-    height: 12,
+    width: 12,
+    height: 9,
     medium: "Graphite on Paper",
     year: "2020",
   },
@@ -103,8 +105,8 @@ export const artworks: Artwork[] = [
   {
     src: "/artwork/still-life-egg.jpg",
     title: "Still Life: Egg",
-    width: 9,
-    height: 12,
+    width: 12,
+    height: 9,
     medium: "Graphite on Paper",
     year: "2018",
   },
@@ -139,6 +141,7 @@ export const artworks: Artwork[] = [
     height: 7,
     medium: "Oil on Paper",
     year: "2026",
+    scaleView: false,
   },
   {
     src: "/artwork/wash.jpg",
@@ -212,6 +215,7 @@ export const artworks: Artwork[] = [
     height: 16,
     medium: "Oil on Canvas",
     year: "2024",
+    scaleView: false,
   },
   {
     src: "/artwork/handsoff.jpg",

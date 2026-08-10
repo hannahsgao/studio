@@ -101,7 +101,10 @@ function balanceRoomSizes(artworks: Artwork[], roomCount: number) {
 
 function makeScaleRooms(artworks: Artwork[]): ScaleRoom[] {
   const dimensioned = artworks.filter(
-    (artwork) => artwork.width !== null && artwork.height !== null,
+    (artwork) =>
+      artwork.width !== null &&
+      artwork.height !== null &&
+      artwork.scaleView !== false,
   );
   if (dimensioned.length === 0) return [];
 
