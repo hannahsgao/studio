@@ -12,7 +12,8 @@ The artwork portfolio served at [hannahgao.studio](https://hannahgao.studio).
    rearrange works within the same year, or comment out an object to hide it.
    Add an optional `displayScale` such as `0.8` to render an image smaller
    without changing its physical dimensions. Set `scaleView: false` for detail
-   or context photographs that should remain in the standard gallery only.
+   or context photographs that should remain in the standard gallery only. Use
+   `scalePage` to pin a work to a particular to-scale gallery page.
 4. Push `main` to deploy through Cloudflare.
 
 On laptop-sized screens, **to scale** opens a relative-scale overview using

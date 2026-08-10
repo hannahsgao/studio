@@ -11,6 +11,8 @@ export type Artwork = {
   displayScale?: number;
   /** Set to false for detail or context photos that are not standalone works. */
   scaleView?: boolean;
+  /** Optional one-based page override in the to-scale gallery. */
+  scalePage?: number;
 };
 
 /**
@@ -45,6 +47,7 @@ export const artworks: Artwork[] = [
     height: 36,
     medium: "Oil on Canvas",
     year: "2023",
+    scalePage: 1,
   },
   {
     src: "/artwork/blame.jpg",
@@ -53,6 +56,7 @@ export const artworks: Artwork[] = [
     height: 24,
     medium: "Oil on Canvas",
     year: "2023",
+    scalePage: 1,
   },
   {
     src: "/artwork/rising.jpg",
@@ -61,6 +65,7 @@ export const artworks: Artwork[] = [
     height: 24,
     medium: "Oil on Board",
     year: "2024",
+    scalePage: 2,
   },
   //{
   //  src: "/artwork/landscape.jpg",
@@ -117,6 +122,7 @@ export const artworks: Artwork[] = [
     height: 24,
     medium: "Oil on Canvas",
     year: "2022",
+    scalePage: 2,
   },
   {
     src: "/artwork/studio-pic-stanford.jpg",
@@ -183,6 +189,7 @@ export const artworks: Artwork[] = [
     height: 96,
     medium: "Acrylic on Composite Board",
     year: "2024",
+    scalePage: 2,
   },
   {
     src: "/artwork/bastion.jpg",
@@ -224,6 +231,7 @@ export const artworks: Artwork[] = [
     height: 10,
     medium: "Oil on Linen Paper",
     year: "2023",
+    scalePage: 1,
   },
   {
     src: "/artwork/inside-out.jpg",
@@ -248,6 +256,7 @@ export const artworks: Artwork[] = [
     height: 48,
     medium: "Oil on Canvas",
     year: "2021",
+    scalePage: 1,
   },
   {
     src: "/artwork/the-walls-we-build.jpg",
@@ -256,5 +265,6 @@ export const artworks: Artwork[] = [
     height: 48,
     medium: "Oil on Canvas",
     year: "2022",
+    scalePage: 2,
   },
 ];

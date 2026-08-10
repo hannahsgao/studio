@@ -110,26 +110,58 @@ function makeScaleRooms(artworks: Artwork[]): ScaleRoom[] {
 
   const roomCount = Math.ceil(dimensioned.length / TARGET_WORKS_PER_WALL);
   const roomSizes = balanceRoomSizes(dimensioned, roomCount);
-  const rooms: ScaleRoom[] = [];
   let start = 0;
+  const roomArtworks = roomSizes.map((roomSize) => {
+    const group = dimensioned.slice(start, start + roomSize);
+    start += roomSize;
+    return group;
+  });
+  const validOverrides = dimensioned.filter(
+    (artwork) =>
+      artwork.scalePage !== undefined &&
+      Number.isInteger(artwork.scalePage) &&
+      artwork.scalePage >= 1 &&
+      artwork.scalePage <= roomCount,
+  );
+  const overriddenSources = new Set(
+    validOverrides.map((artwork) => artwork.src),
+  );
+  const chronologicalIndex = new Map(
+    dimensioned.map((artwork, index) => [artwork.src, index]),
+  );
 
-  for (const roomSize of roomSizes) {
-    const roomArtworks = dimensioned.slice(start, start + roomSize);
-    const years = [...new Set(roomArtworks.map((artwork) => artwork.year))];
+  for (const group of roomArtworks) {
+    const retained = group.filter(
+      (artwork) => !overriddenSources.has(artwork.src),
+    );
+    group.splice(0, group.length, ...retained);
+  }
 
-    rooms.push({
-      artworks: roomArtworks,
-      widthInches: artworkSpan(roomArtworks),
+  for (const artwork of validOverrides) {
+    roomArtworks[(artwork.scalePage ?? 1) - 1].push(artwork);
+  }
+
+  for (const group of roomArtworks) {
+    group.sort(
+      (a, b) =>
+        (chronologicalIndex.get(a.src) ?? 0) -
+        (chronologicalIndex.get(b.src) ?? 0),
+    );
+  }
+
+  return roomArtworks.map((group) => {
+    const years = [...new Set(group.map((artwork) => artwork.year))];
+
+    return {
+      artworks: group,
+      widthInches: artworkSpan(group),
       heightInches: Math.max(
-        ...roomArtworks.map((artwork) => artwork.height ?? 0),
+        ...group.map((artwork) => artwork.height ?? 0),
       ),
       yearLabel:
         years.length > 1 ? `${years[0]}—${years.at(-1)}` : years[0] ?? "",
-    });
-    start += roomSize;
-  }
-
-  return rooms;
+    };
+  });
 }
 
 function getPixelsPerInch(rooms: ScaleRoom[]) {
