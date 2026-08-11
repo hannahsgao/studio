@@ -36,6 +36,14 @@ export default function AboutPage() {
             {/* Replace or extend this paragraph with your full bio. */}
             <p>hi! i'm hannah gao </p>
             <p>i'm a rising junior at stanford studying math and cs and a bit of art practice.</p>
+            <p>currently working on memory and personalization at openai,</p>
+            <p>past lives include:</p>
+            <ul>
+              - directing sponsorships/designing at Treehacks
+              - design engineering at Poke
+              - full-time oil painting
+              - tiktok *micro* influencing 
+            </ul>
             <p>--</p>
             <p>you can find some of my ramblings on <a href="https://x.com/@hannahgao">twitter</a> or <a href="https://substack.com/@hannahgao">substack</a>,</p>
             <p>or just email me at hannahgaoart@gmail.com.</p>
