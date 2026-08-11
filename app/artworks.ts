@@ -159,7 +159,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/DONTLOOKATME.jpg",
-    title: "DONTLOOK",
+    title: "DONTLOOK (weird fish)",
     width: 36,
     height: 48,
     medium: "Oil on Canvas",

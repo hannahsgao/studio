@@ -33,21 +33,43 @@ export default function AboutPage() {
             </figure>
           )}
           <section className="about-copy" aria-label="About Hannah Gao">
-            {/* Replace or extend this paragraph with your full bio. */}
-            <p>hi! i'm hannah gao </p>
-            <p>i'm a rising junior at stanford studying math and cs and a bit of art practice.</p>
-            <p>currently working on memory and personalization at openai,</p>
-            <p>past lives include:</p>
-            <ul>
-              - directing sponsorships/designing at Treehacks
-              - design engineering at Poke
-              - full-time oil painting
-              - tiktok *micro* influencing 
-            </ul>
-            <p>--</p>
-            <p>you can find some of my ramblings on <a href="https://x.com/@hannahgao">twitter</a> or <a href="https://substack.com/@hannahgao">substack</a>,</p>
-            <p>or just email me at hannahgaoart@gmail.com.</p>
+            <div className="about-section">
+              <p>hi! i'm hannah gao</p>
+              <p>
+                i'm a rising junior at stanford studying math and cs and a bit
+                of art practice.
+              </p>
+              <p>currently working on memory and personalization at openai.</p>
+            </div>
 
+            <div className="about-section">
+              <p>past lives include:</p>
+              <ul className="about-list">
+                <li>directing sponsorships/designing at Treehacks</li>
+                <li>design engineering at Poke</li>
+                <li>full-time oil painting</li>
+                <li>
+                  tiktok <em>micro</em> influencing
+                </li>
+              </ul>
+            </div>
+
+            <hr className="about-divider" />
+
+            <div className="about-section">
+              <p>
+                you can find some of my ramblings on{" "}
+                <a href="https://x.com/@hannahgao">twitter</a> or{" "}
+                <a href="https://substack.com/@hannahgao">substack</a>,
+              </p>
+              <p>
+                or just email me at{" "}
+                <a href="mailto:hannahgaoart@gmail.com">
+                  hannahgaoart@gmail.com
+                </a>
+                .
+              </p>
+            </div>
           </section>
         </div>
       </main>

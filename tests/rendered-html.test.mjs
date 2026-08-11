@@ -63,6 +63,10 @@ test("server-renders the about page", async () => {
   assert.match(html, /<title>about — hannah gao ✶<\/title>/);
   assert.match(html, /src="\/artwork\/studio-pic\.jpg"/);
   assert.match(html, /class="about-copy"/);
+  assert.match(html, /class="about-list"/);
+  assert.equal(html.match(/<li>/g)?.length, 4);
+  assert.match(html, /<em>micro<\/em>/);
+  assert.match(html, /href="mailto:hannahgaoart@gmail\.com"/);
   assert.match(html, /class="artwork-details"/);
   assert.match(html, /href="\/"/);
   assert.match(html, />gallery<\/a>/);
