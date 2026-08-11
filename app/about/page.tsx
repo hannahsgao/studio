@@ -44,7 +44,7 @@ export default function AboutPage() {
 
             <div className="about-section">
               <p>past lives include:</p>
-              <ul className="about-list">
+              <ul className="about-list" role="list">
                 <li>directing sponsorships/designing at Treehacks</li>
                 <li>design engineering at Poke</li>
                 <li>full-time oil painting</li>

@@ -201,7 +201,7 @@ body {
 }
 
 .about-copy a:hover {
-  opacity: 0.5;
+  opacity: 0.65;
 }
 
 .about-copy a:focus-visible {
