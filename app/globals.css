@@ -163,21 +163,20 @@ body {
 }
 
 .about-list {
-  display: grid;
   margin: 0.25em 0 0;
   padding: 0;
-  gap: 0;
   list-style: none;
 }
 
 .about-list li {
-  display: grid;
-  grid-template-columns: 1.15em minmax(0, 1fr);
+  position: relative;
+  padding-left: 1.15em;
 }
 
 .about-list li::before {
-  color: #777;
-  content: "—";
+  position: absolute;
+  left: 0;
+  content: ">";
 }
 
 .about-list em {

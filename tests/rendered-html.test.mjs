@@ -69,6 +69,7 @@ test("server-renders the about page", async () => {
   assert.ok(aboutList);
   assert.equal(aboutList[1].match(/<li>/g)?.length, 4);
   assert.match(html, /<em>micro<\/em>/);
+  assert.match(html, /href="https:\/\/www\.tiktok\.com\/@yurtyobain"/);
   assert.match(html, /href="mailto:hannahgaoart@gmail\.com"/);
   assert.match(html, /class="artwork-details"/);
   assert.match(html, /href="\/"/);

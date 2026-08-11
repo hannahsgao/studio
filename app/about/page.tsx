@@ -49,7 +49,8 @@ export default function AboutPage() {
                 <li>design engineering at Poke</li>
                 <li>full-time oil painting</li>
                 <li>
-                  tiktok <em>micro</em> influencing
+                  <a href="https://www.tiktok.com/@yurtyobain">tiktok</a>{" "}
+                  <em>micro</em> influencing
                 </li>
               </ul>
             </div>
