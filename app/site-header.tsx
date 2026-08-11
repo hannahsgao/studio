@@ -3,13 +3,18 @@ import type { ReactNode } from "react";
 type SiteHeaderProps = {
   currentPage: "gallery" | "about";
   galleryControl?: ReactNode;
+  isInert?: boolean;
 };
 
-export function SiteHeader({ currentPage, galleryControl }: SiteHeaderProps) {
+export function SiteHeader({
+  currentPage,
+  galleryControl,
+  isInert = false,
+}: SiteHeaderProps) {
   const isAbout = currentPage === "about";
 
   return (
-    <header className="site-header">
+    <header className="site-header" inert={isInert}>
       <a className="signature-slot" href="/" aria-label="Hannah Gao — home">
         <img
           src="/signature.png"

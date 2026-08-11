@@ -204,17 +204,47 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   const scaleModeRef = useRef(false);
   const wheelLockRef = useRef(false);
   const wheelResetRef = useRef<number | null>(null);
+  const focusedCloseRef = useRef<HTMLButtonElement>(null);
+  const focusedTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const focusedCloseTimerRef = useRef<number | null>(null);
   const [isScaleMode, setIsScaleMode] = useState(false);
   const [isFading, setIsFading] = useState(false);
   const [roomIndex, setRoomIndex] = useState(0);
   const [pixelsPerInch, setPixelsPerInch] = useState(4);
   const [activeArtwork, setActiveArtwork] = useState<Artwork | null>(null);
+  const [focusedArtwork, setFocusedArtwork] = useState<Artwork | null>(null);
+  const [isFocusClosing, setIsFocusClosing] = useState(false);
+
+  const closeFocusedArtwork = useCallback(() => {
+    if (isFocusClosing) return;
+
+    const finish = () => {
+      setFocusedArtwork(null);
+      setIsFocusClosing(false);
+      focusedCloseTimerRef.current = null;
+      window.requestAnimationFrame(() => {
+        focusedTriggerRef.current?.focus({ preventScroll: true });
+      });
+    };
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    if (reduceMotion) {
+      finish();
+      return;
+    }
+
+    setIsFocusClosing(true);
+    focusedCloseTimerRef.current = window.setTimeout(finish, 240);
+  }, [isFocusClosing]);
 
   const setRoom = useCallback(
     (nextRoom: number) => {
       const boundedRoom = Math.min(rooms.length - 1, Math.max(0, nextRoom));
       setRoomIndex(boundedRoom);
       setActiveArtwork(null);
+      setFocusedArtwork(null);
     },
     [rooms.length],
   );
@@ -225,6 +255,14 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
         setPixelsPerInch(getPixelsPerInch(rooms));
         setRoomIndex(0);
         setActiveArtwork(null);
+      } else {
+        if (focusedCloseTimerRef.current !== null) {
+          window.clearTimeout(focusedCloseTimerRef.current);
+          focusedCloseTimerRef.current = null;
+        }
+        setFocusedArtwork(null);
+        setIsFocusClosing(false);
+        focusedTriggerRef.current = null;
       }
       scaleModeRef.current = next;
       setIsScaleMode(next);
@@ -303,6 +341,13 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   }, [isScaleMode]);
 
   useEffect(() => {
+    if (!focusedArtwork) return;
+    window.requestAnimationFrame(() => {
+      focusedCloseRef.current?.focus({ preventScroll: true });
+    });
+  }, [focusedArtwork]);
+
+  useEffect(() => {
     if (isScaleMode || pendingFocusRef.current === null) return;
 
     const target = pendingFocusRef.current;
@@ -370,6 +415,9 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
       if (wheelResetRef.current !== null) {
         window.clearTimeout(wheelResetRef.current);
       }
+      if (focusedCloseTimerRef.current !== null) {
+        window.clearTimeout(focusedCloseTimerRef.current);
+      }
     },
     [],
   );
@@ -414,9 +462,14 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   } satisfies CSSProperties;
 
   return (
-    <div className="gallery-experience">
+    <div
+      className={`gallery-experience${
+        focusedArtwork ? " gallery-experience--focus" : ""
+      }`}
+    >
       <SiteHeader
         currentPage="gallery"
+        isInert={focusedArtwork !== null}
         galleryControl={
           <button
             ref={toggleRef}
@@ -443,11 +496,16 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
           isFading ? " gallery--fading" : ""
         }`}
         tabIndex={-1}
+        inert={focusedArtwork !== null}
+        aria-hidden={focusedArtwork ? true : undefined}
         aria-label={isScaleMode ? "Artworks shown at relative scale" : undefined}
         onKeyDown={handleKeyDown}
       >
         {isScaleMode ? (
-          <div className="scale-gallery-track" style={trackStyle}>
+          <div
+            className="scale-gallery-track"
+            style={trackStyle}
+          >
             {rooms.map((room, index) => (
               <section
                 className="scale-gallery-room"
@@ -461,28 +519,31 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
                   style={{ gap: ARTWORK_GAP_INCHES * pixelsPerInch }}
                 >
                   {room.artworks.map((artwork) => (
-                    <figure
-                      className="scale-artwork"
-                      key={artwork.src}
-                      role="group"
-                      tabIndex={0}
-                      aria-label={artworkLabel(artwork)}
-                      style={{
-                        width: (artwork.width ?? 0) * pixelsPerInch,
-                        height: (artwork.height ?? 0) * pixelsPerInch,
-                      }}
-                      onFocus={() => setActiveArtwork(artwork)}
-                      onPointerEnter={() => setActiveArtwork(artwork)}
-                    >
-                      <img
-                        src={artwork.src}
-                        alt=""
-                        loading={
-                          Math.abs(index - roomIndex) <= 1 ? "eager" : "lazy"
-                        }
-                        fetchPriority={index === roomIndex ? "high" : "low"}
-                        decoding="async"
-                      />
+                    <figure className="scale-artwork" key={artwork.src}>
+                      <button
+                        type="button"
+                        aria-label={`Focus ${artworkLabel(artwork)}`}
+                        style={{
+                          width: (artwork.width ?? 0) * pixelsPerInch,
+                          height: (artwork.height ?? 0) * pixelsPerInch,
+                        }}
+                        onFocus={() => setActiveArtwork(artwork)}
+                        onPointerEnter={() => setActiveArtwork(artwork)}
+                        onClick={(event) => {
+                          focusedTriggerRef.current = event.currentTarget;
+                          setFocusedArtwork(artwork);
+                        }}
+                      >
+                        <img
+                          src={artwork.src}
+                          alt=""
+                          loading={
+                            Math.abs(index - roomIndex) <= 1 ? "eager" : "lazy"
+                          }
+                          fetchPriority={index === roomIndex ? "high" : "low"}
+                          decoding="async"
+                        />
+                      </button>
                     </figure>
                   ))}
                 </div>
@@ -571,9 +632,54 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
         )}
       </main>
 
+      {isScaleMode && focusedArtwork && (
+        <section
+          className={`focused-artwork-overlay${
+            isFocusClosing ? " focused-artwork-overlay--closing" : ""
+          }`}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${focusedArtwork.title} focused view`}
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) closeFocusedArtwork();
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              closeFocusedArtwork();
+            } else if (event.key === "Tab") {
+              event.preventDefault();
+              focusedCloseRef.current?.focus();
+            }
+          }}
+        >
+          <button
+            ref={focusedCloseRef}
+            className="focused-artwork-close"
+            type="button"
+            aria-label="Close focused artwork"
+            disabled={isFocusClosing}
+            onClick={closeFocusedArtwork}
+          >
+            close
+          </button>
+
+          <figure className="focused-artwork">
+            <img
+              src={focusedArtwork.src}
+              alt={`${focusedArtwork.title} by Hannah Gao`}
+              decoding="async"
+            />
+            <ArtworkCaption artwork={focusedArtwork} />
+          </figure>
+        </section>
+      )}
+
       <p className="visually-hidden" aria-live="polite">
         {isScaleMode
-          ? activeArtwork
+          ? focusedArtwork
+            ? `${focusedArtwork.title} focused. Press Escape to close.`
+            : activeArtwork
             ? `${activeArtwork.title}. Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
             : `Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
           : "Standard gallery opened."}
