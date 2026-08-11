@@ -122,7 +122,7 @@ export const artworks: Artwork[] = [
     height: 24,
     medium: "Oil on Canvas",
     year: "2022",
-    scalePage: 2,
+    scalePage: 1,
   },
   {
     src: "/artwork/studio-pic-stanford.jpg",
@@ -198,6 +198,7 @@ export const artworks: Artwork[] = [
     height: 48,
     medium: "Oil on Canvas",
     year: "2024",
+    scalePage: 2,
   },
   {
     src: "/artwork/mirror:rorrim.jpg",
