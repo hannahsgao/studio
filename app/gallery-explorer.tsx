@@ -9,7 +9,6 @@ import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { flushSync } from "react-dom";
 import { ArtworkCaption } from "./artwork-caption";
 import type { Artwork } from "./artworks";
 import { SiteHeader } from "./site-header";
@@ -28,12 +27,6 @@ type ScaleRoom = {
   widthInches: number;
   heightInches: number;
   yearLabel: string;
-};
-
-type DocumentWithViewTransition = Document & {
-  startViewTransition?: (update: () => void) => {
-    finished: Promise<void>;
-  };
 };
 
 type RoomPartition = {
@@ -194,12 +187,52 @@ function artworkLabel(artwork: Artwork) {
     .join(", ");
 }
 
+function FocusedArtworkImage({ artwork }: { artwork: Artwork }) {
+  const previewSrc = artwork.scaleSrc ?? artwork.src;
+  const [displaySrc, setDisplaySrc] = useState(previewSrc);
+
+  useEffect(() => {
+    setDisplaySrc(previewSrc);
+    if (previewSrc === artwork.src) return;
+
+    let cancelled = false;
+    const fullResolutionImage = new Image();
+    fullResolutionImage.decoding = "async";
+    fullResolutionImage.src = artwork.src;
+
+    void fullResolutionImage.decode().then(
+      () => {
+        if (!cancelled) setDisplaySrc(artwork.src);
+      },
+      () => {
+        if (
+          !cancelled &&
+          fullResolutionImage.complete &&
+          fullResolutionImage.naturalWidth > 0
+        ) {
+          setDisplaySrc(artwork.src);
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [artwork.src, previewSrc]);
+
+  return (
+    <img
+      src={displaySrc}
+      alt={`${artwork.title} by Hannah Gao`}
+      decoding="async"
+    />
+  );
+}
+
 export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   const rooms = useMemo(() => makeScaleRooms(artworks), [artworks]);
   const galleryRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
-  const transitionRef = useRef(false);
-  const pendingModeRef = useRef<boolean | null>(null);
   const pendingFocusRef = useRef<"toggle" | "gallery" | null>(null);
   const scaleModeRef = useRef(false);
   const wheelLockRef = useRef(false);
@@ -208,7 +241,6 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   const focusedTriggerRef = useRef<HTMLButtonElement | null>(null);
   const focusedCloseTimerRef = useRef<number | null>(null);
   const [isScaleMode, setIsScaleMode] = useState(false);
-  const [isFading, setIsFading] = useState(false);
   const [roomIndex, setRoomIndex] = useState(0);
   const [pixelsPerInch, setPixelsPerInch] = useState(4);
   const [activeArtwork, setActiveArtwork] = useState<Artwork | null>(null);
@@ -270,60 +302,12 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     [rooms],
   );
 
-  const finishTransition = useCallback(() => {
-    transitionRef.current = false;
-    document.documentElement.classList.remove("gallery-view-transition");
-
-    const pendingMode = pendingModeRef.current;
-    pendingModeRef.current = null;
-    if (pendingMode !== null && pendingMode !== scaleModeRef.current) {
-      commitScaleMode(pendingMode);
-    }
-  }, [commitScaleMode]);
-
   const updateScaleMode = useCallback(
     (next: boolean) => {
-      if (transitionRef.current) {
-        pendingModeRef.current = next;
-        return;
-      }
       if (next === scaleModeRef.current) return;
-
-      const commit = () => commitScaleMode(next);
-
-      const reduceMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)",
-      ).matches;
-
-      if (reduceMotion) {
-        commit();
-        return;
-      }
-
-      const transitionDocument = document as DocumentWithViewTransition;
-      if (transitionDocument.startViewTransition) {
-        transitionRef.current = true;
-        document.documentElement.classList.add("gallery-view-transition");
-        const transition = transitionDocument.startViewTransition(() => {
-          flushSync(commit);
-        });
-        transition.finished.finally(finishTransition);
-        return;
-      }
-
-      transitionRef.current = true;
-      setIsFading(true);
-      window.setTimeout(() => {
-        flushSync(commit);
-        window.requestAnimationFrame(() => {
-          setIsFading(false);
-          window.setTimeout(() => {
-            finishTransition();
-          }, 420);
-        });
-      }, 180);
+      commitScaleMode(next);
     },
-    [commitScaleMode, finishTransition],
+    [commitScaleMode],
   );
 
   useEffect(() => {
@@ -363,7 +347,6 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     const handleWidthChange = (event: MediaQueryListEvent) => {
       if (!event.matches && scaleModeRef.current) {
         pendingFocusRef.current = "gallery";
-        pendingModeRef.current = null;
         commitScaleMode(false);
       }
     };
@@ -458,7 +441,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
 
   const currentRoom = rooms[roomIndex];
   const trackStyle = {
-    transform: `translate3d(${-roomIndex * 100}%, 0, 0)`,
+    transform: `translateX(${-roomIndex * 100}%)`,
   } satisfies CSSProperties;
 
   return (
@@ -492,9 +475,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
       <main
         id="gallery"
         ref={galleryRef}
-        className={`gallery${isScaleMode ? " gallery--scale" : ""}${
-          isFading ? " gallery--fading" : ""
-        }`}
+        className={`gallery${isScaleMode ? " gallery--scale" : ""}`}
         tabIndex={-1}
         inert={focusedArtwork !== null}
         aria-hidden={focusedArtwork ? true : undefined}
@@ -535,7 +516,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
                         }}
                       >
                         <img
-                          src={artwork.src}
+                          src={artwork.scaleSrc ?? artwork.src}
                           alt=""
                           loading={
                             Math.abs(index - roomIndex) <= 1 ? "eager" : "lazy"
@@ -572,14 +553,6 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
 
         {isScaleMode && (
           <>
-            <div className="scale-gallery-ruler" aria-hidden="true">
-              <span
-                className="scale-gallery-ruler__line"
-                style={{ width: 12 * pixelsPerInch }}
-              />
-              <span>12 in</span>
-            </div>
-
             <div className="scale-gallery-status">
               {activeArtwork ? (
                 <>
@@ -613,7 +586,14 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
                 disabled={roomIndex === 0}
                 onClick={() => setRoom(roomIndex - 1)}
               >
-                ←
+                <svg
+                  className="scale-gallery-chevron"
+                  viewBox="0 0 16 16"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d="M10.25 3.5 5.75 8l4.5 4.5" />
+                </svg>
               </button>
               <span>
                 {String(roomIndex + 1).padStart(2, "0")} /{" "}
@@ -625,7 +605,14 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
                 disabled={roomIndex === rooms.length - 1}
                 onClick={() => setRoom(roomIndex + 1)}
               >
-                →
+                <svg
+                  className="scale-gallery-chevron"
+                  viewBox="0 0 16 16"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d="M5.75 3.5 10.25 8l-4.5 4.5" />
+                </svg>
               </button>
             </nav>
           </>
@@ -665,11 +652,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
           </button>
 
           <figure className="focused-artwork">
-            <img
-              src={focusedArtwork.src}
-              alt={`${focusedArtwork.title} by Hannah Gao`}
-              decoding="async"
-            />
+            <FocusedArtworkImage artwork={focusedArtwork} />
             <ArtworkCaption artwork={focusedArtwork} />
           </figure>
         </section>
