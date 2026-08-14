@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import test from "node:test";
 
 async function render(pathname = "/") {
@@ -77,4 +77,25 @@ test("server-renders the about page", async () => {
   assert.match(html, /class="artwork-details"/);
   assert.match(html, /href="\/"/);
   assert.match(html, />gallery<\/a>/);
+});
+
+test("scale gallery previews stay lightweight", () => {
+  const manifest = readFileSync(
+    new URL("../app/artworks.ts", import.meta.url),
+    "utf8",
+  );
+  const scaleSources = [
+    ...manifest.matchAll(/scaleSrc: "(\/artwork\/scale\/[^"]+)"/g),
+  ].map((match) => match[1]);
+
+  assert.equal(scaleSources.length, 24);
+  assert.equal(new Set(scaleSources).size, scaleSources.length);
+
+  const totalBytes = scaleSources.reduce((sum, src) => {
+    const asset = new URL(`../public${src}`, import.meta.url);
+    assert.equal(existsSync(asset), true, `${src} should exist`);
+    return sum + statSync(asset).size;
+  }, 0);
+
+  assert.ok(totalBytes < 1024 * 1024, "scale previews should stay below 1 MiB");
 });

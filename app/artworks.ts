@@ -1,5 +1,7 @@
 export type Artwork = {
   src: string;
+  /** Optional lightweight source used only by the physical-scale wall. */
+  scaleSrc?: string;
   title: string;
   width: number | null;
   height: number | null;
@@ -26,6 +28,7 @@ export type Artwork = {
 export const artworks: Artwork[] = [
   {
     src: "/artwork/roar.jpg",
+    scaleSrc: "/artwork/scale/roar.webp",
     title: "Roar",
     width: 8,
     height: 10,
@@ -34,6 +37,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/cozy.jpg",
+    scaleSrc: "/artwork/scale/cozy.webp",
     title: "Cozy",
     width: 7,
     height: 5,
@@ -42,6 +46,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/unravel.jpg",
+    scaleSrc: "/artwork/scale/unravel.webp",
     title: "Unravel",
     width: 24,
     height: 36,
@@ -51,6 +56,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/blame.jpg",
+    scaleSrc: "/artwork/scale/blame.webp",
     title: "Blame",
     width: 24,
     height: 24,
@@ -60,6 +66,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/rising.jpg",
+    scaleSrc: "/artwork/scale/rising.webp",
     title: "Rising",
     width: 12,
     height: 24,
@@ -77,6 +84,7 @@ export const artworks: Artwork[] = [
   //},
   {
     src: "/artwork/boots.jpg",
+    scaleSrc: "/artwork/scale/boots.webp",
     title: "Boots",
     width: 8,
     height: 10,
@@ -85,6 +93,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/pick.jpg",
+    scaleSrc: "/artwork/scale/pick.webp",
     title: "Pick",
     width: 9,
     height: 12,
@@ -93,6 +102,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/gotcha.jpg",
+    scaleSrc: "/artwork/scale/gotcha.webp",
     title: "Gotcha",
     width: 12,
     height: 9,
@@ -101,6 +111,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/reflection.jpg",
+    scaleSrc: "/artwork/scale/reflection.webp",
     title: "Reflection",
     width: 10,
     height: 10,
@@ -109,6 +120,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/still-life-egg.jpg",
+    scaleSrc: "/artwork/scale/still-life-egg.webp",
     title: "Still Life: Egg",
     width: 12,
     height: 9,
@@ -117,6 +129,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/anubis-dream.jpg",
+    scaleSrc: "/artwork/scale/anubis-dream.webp",
     title: "Anubis Dream",
     width: 16,
     height: 24,
@@ -134,6 +147,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/cows.jpg",
+    scaleSrc: "/artwork/scale/cows.webp",
     title: "Cows",
     width: 12,
     height: 12,
@@ -151,6 +165,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/wash.jpg",
+    scaleSrc: "/artwork/scale/wash.webp",
     title: "Wash",
     width: 12,
     height: 12,
@@ -159,6 +174,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/DONTLOOKATME.jpg",
+    scaleSrc: "/artwork/scale/DONTLOOKATME.webp",
     title: "DONTLOOK (weird fish)",
     width: 36,
     height: 48,
@@ -176,6 +192,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/heritage.jpg",
+    scaleSrc: "/artwork/scale/heritage.webp",
     title: "Heritage",
     width: 9,
     height: 12,
@@ -184,6 +201,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/tiedup.jpg",
+    scaleSrc: "/artwork/scale/tiedup.webp",
     title: "Tied Up",
     width: 48,
     height: 96,
@@ -193,6 +211,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/bastion.jpg",
+    scaleSrc: "/artwork/scale/bastion.webp",
     title: "Bastion",
     width: 36,
     height: 48,
@@ -202,6 +221,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/mirror:rorrim.jpg",
+    scaleSrc: "/artwork/scale/mirror:rorrim.webp",
     title: "mirror:rorrim",
     width: 10,
     height: 10,
@@ -210,6 +230,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/fresh.jpg",
+    scaleSrc: "/artwork/scale/fresh.webp",
     title: "Fresh",
     width: 24,
     height: 36,
@@ -227,6 +248,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/handsoff.jpg",
+    scaleSrc: "/artwork/scale/handsoff.webp",
     title: "Hands Off",
     width: 10,
     height: 10,
@@ -236,6 +258,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/inside-out.jpg",
+    scaleSrc: "/artwork/scale/inside-out.webp",
     title: "Inside Out",
     width: 10,
     height: 10,
@@ -244,6 +267,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/still-life.jpg",
+    scaleSrc: "/artwork/scale/still-life.webp",
     title: "Still Life",
     width: 12,
     height: 9,
@@ -252,6 +276,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/oasis.jpg",
+    scaleSrc: "/artwork/scale/oasis.webp",
     title: "Oasis",
     width: 36,
     height: 48,
@@ -261,6 +286,7 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/the-walls-we-build.jpg",
+    scaleSrc: "/artwork/scale/the-walls-we-build.webp",
     title: "The Walls We Build",
     width: 48,
     height: 48,

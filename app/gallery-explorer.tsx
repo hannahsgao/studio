@@ -187,6 +187,48 @@ function artworkLabel(artwork: Artwork) {
     .join(", ");
 }
 
+function FocusedArtworkImage({ artwork }: { artwork: Artwork }) {
+  const previewSrc = artwork.scaleSrc ?? artwork.src;
+  const [displaySrc, setDisplaySrc] = useState(previewSrc);
+
+  useEffect(() => {
+    setDisplaySrc(previewSrc);
+    if (previewSrc === artwork.src) return;
+
+    let cancelled = false;
+    const fullResolutionImage = new Image();
+    fullResolutionImage.decoding = "async";
+    fullResolutionImage.src = artwork.src;
+
+    void fullResolutionImage.decode().then(
+      () => {
+        if (!cancelled) setDisplaySrc(artwork.src);
+      },
+      () => {
+        if (
+          !cancelled &&
+          fullResolutionImage.complete &&
+          fullResolutionImage.naturalWidth > 0
+        ) {
+          setDisplaySrc(artwork.src);
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [artwork.src, previewSrc]);
+
+  return (
+    <img
+      src={displaySrc}
+      alt={`${artwork.title} by Hannah Gao`}
+      decoding="async"
+    />
+  );
+}
+
 export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   const rooms = useMemo(() => makeScaleRooms(artworks), [artworks]);
   const galleryRef = useRef<HTMLElement>(null);
@@ -399,7 +441,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
 
   const currentRoom = rooms[roomIndex];
   const trackStyle = {
-    transform: `translate3d(${-roomIndex * 100}%, 0, 0)`,
+    transform: `translateX(${-roomIndex * 100}%)`,
   } satisfies CSSProperties;
 
   return (
@@ -474,7 +516,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
                         }}
                       >
                         <img
-                          src={artwork.src}
+                          src={artwork.scaleSrc ?? artwork.src}
                           alt=""
                           loading={
                             Math.abs(index - roomIndex) <= 1 ? "eager" : "lazy"
@@ -610,11 +652,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
           </button>
 
           <figure className="focused-artwork">
-            <img
-              src={focusedArtwork.src}
-              alt={`${focusedArtwork.title} by Hannah Gao`}
-              decoding="async"
-            />
+            <FocusedArtworkImage artwork={focusedArtwork} />
             <ArtworkCaption artwork={focusedArtwork} />
           </figure>
         </section>
