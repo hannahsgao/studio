@@ -72,17 +72,37 @@ const EDITORIAL_PAGES = [
 
 const EDITORIAL_OMITTED_SOURCES = new Set(["/artwork/tiedup.jpg"]);
 
-const EDITORIAL_PREVIEWS: Record<string, string> = {
+const GRID_PREVIEWS: Record<string, string> = {
   "/artwork/studio-pic-stanford.jpg":
     "/artwork/editorial/studio-pic-stanford-480.webp",
-  "/artwork/DONTLOOK-sketch.jpg":
-    "/artwork/editorial/DONTLOOK-sketch-320.webp",
   "/artwork/DONTLOOKATME.jpg":
     "/artwork/editorial/DONTLOOKATME-480.webp",
+  "/artwork/DONTLOOK-sketch.jpg":
+    "/artwork/grid/DONTLOOK-sketch-640.webp",
+  "/artwork/unravel.jpg": "/artwork/grid/unravel-640.webp",
+  "/artwork/blame.jpg": "/artwork/grid/blame-640.webp",
+  "/artwork/handsoff.jpg": "/artwork/grid/handsoff-640.webp",
   "/artwork/rising.jpg": "/artwork/editorial/rising-640.webp",
   "/artwork/heritage.jpg": "/artwork/editorial/heritage-520.webp",
+  "/artwork/fresh.jpg": "/artwork/grid/fresh-640.webp",
   "/artwork/bastion.jpg": "/artwork/editorial/bastion-480.webp",
+  "/artwork/anubis-dream.jpg": "/artwork/grid/anubis-dream-640.webp",
+  "/artwork/the-walls-we-build.jpg":
+    "/artwork/grid/the-walls-we-build-640.webp",
+  "/artwork/wash.jpg": "/artwork/grid/wash-640.webp",
+  "/artwork/mirror:rorrim.jpg": "/artwork/grid/mirror:rorrim-640.webp",
+  "/artwork/inside-out.jpg": "/artwork/grid/inside-out-640.webp",
+  "/artwork/reflection.jpg": "/artwork/grid/reflection-640.webp",
+  "/artwork/oasis.jpg": "/artwork/grid/oasis-640.webp",
+  "/artwork/roar.jpg": "/artwork/grid/roar-640.webp",
   "/artwork/cozy.jpg": "/artwork/editorial/cozy-640.webp",
+  "/artwork/boots.jpg": "/artwork/grid/boots-640.webp",
+  "/artwork/cows.jpg": "/artwork/grid/cows-640.webp",
+  "/artwork/pick.jpg": "/artwork/grid/pick-640.webp",
+  "/artwork/gotcha.jpg": "/artwork/grid/gotcha-640.webp",
+  "/artwork/still-life-egg.jpg":
+    "/artwork/grid/still-life-egg-640.webp",
+  "/artwork/still-life.jpg": "/artwork/grid/still-life-640.webp",
 };
 
 const EDITORIAL_IMAGE_SIZES: Record<
@@ -136,26 +156,6 @@ type EditorialPage = {
 type RoomPartition = {
   cost: number;
   sizes: number[];
-};
-
-type GalleryReferenceObject = {
-  id: string;
-  nominalWidthInches: number;
-  nominalHeightInches: number;
-  editorialImage1x: string;
-  editorialImage2x: string;
-  calibratedImage1x: string;
-  calibratedImage2x: string;
-};
-
-const STUDIO_STOOL: GalleryReferenceObject = {
-  id: "stanford-studio-stool",
-  nominalWidthInches: 16,
-  nominalHeightInches: 27,
-  editorialImage1x: "/gallery/studio-stool@1x.webp",
-  editorialImage2x: "/gallery/studio-stool@2x.webp",
-  calibratedImage1x: "/gallery/studio-stool-scale@1x.webp",
-  calibratedImage2x: "/gallery/studio-stool-scale@2x.webp",
 };
 
 function artworkSpan(artworks: Artwork[]) {
@@ -342,47 +342,6 @@ function makeEditorialPages(artworks: Artwork[]) {
   return pages;
 }
 
-function getEditorialScaleStyle(pages: EditorialPage[]) {
-  const widthLimits = pages.map((page) => {
-    const physicalWidthTotal = page.artworks
-      .filter(
-        (artwork) => artwork.width !== null && artwork.height !== null,
-      )
-      .reduce((sum, artwork) => sum + (artwork.width ?? 0), 0);
-    const contextCount = page.artworks.filter(
-      (artwork) => artwork.width === null || artwork.height === null,
-    ).length;
-    const gapCount = Math.max(0, page.artworks.length - 1);
-    const subtractions = [
-      "var(--editorial-side-gutter)",
-      "var(--editorial-side-gutter)",
-      ...Array.from(
-        { length: gapCount },
-        () => "var(--editorial-painting-gap)",
-      ),
-      ...Array.from(
-        { length: contextCount },
-        () => "var(--editorial-context-width)",
-      ),
-    ];
-
-    return physicalWidthTotal > 0
-      ? `calc((100vw - ${subtractions.join(" - ")}) / ${physicalWidthTotal})`
-      : "5px";
-  });
-  const tallestArtwork = Math.max(
-    1,
-    ...pages.flatMap((page) =>
-      page.artworks.map((artwork) => artwork.height ?? 0),
-    ),
-  );
-
-  return {
-    "--editorial-width-limit": `min(${widthLimits.join(", ")})`,
-    "--editorial-tallest-artwork": tallestArtwork,
-  } as CSSProperties;
-}
-
 function GalleryArchitecture() {
   return (
     <div className="gallery-architecture" aria-hidden="true">
@@ -395,133 +354,84 @@ function GalleryArchitecture() {
 
 function EditorialGallery({
   pages,
-  referenceObject,
   onOpenArtwork,
 }: {
   pages: EditorialPage[];
-  referenceObject: GalleryReferenceObject | null;
   onOpenArtwork: (
     artwork: Artwork,
     previewSrc: string,
     trigger: HTMLButtonElement,
   ) => void;
 }) {
+  const galleryArtworks = pages.flatMap((page) => page.artworks);
+
   return (
-    <div
-      className="editorial-gallery"
-      style={getEditorialScaleStyle(pages)}
-    >
-      {referenceObject && (
-        <div
-          className="editorial-gallery__reference"
-          aria-hidden="true"
-          style={
-            {
-              aspectRatio: `${referenceObject.nominalWidthInches} / ${referenceObject.nominalHeightInches}`,
-              "--reference-image-1x": `url("${referenceObject.editorialImage1x}")`,
-              "--reference-image-2x": `url("${referenceObject.editorialImage2x}")`,
-            } as CSSProperties
+    <div className="editorial-gallery">
+      <div
+        className="editorial-gallery__grid"
+        data-gallery-view="grid"
+      >
+        {galleryArtworks.map((artwork, artworkIndex) => {
+          const imageSize = EDITORIAL_IMAGE_SIZES[artwork.src];
+          const previewSrc =
+            GRID_PREVIEWS[artwork.src] ?? artwork.scaleSrc ?? artwork.src;
+          if (!imageSize) {
+            throw new Error(
+              `Editorial gallery is missing image dimensions for ${artwork.src}.`,
+            );
           }
-        />
-      )}
 
-      <div className="editorial-gallery__rooms">
-        {pages.map((page, pageIndex) => (
-          <section
-            className="editorial-gallery__room"
-            key={page.id}
-            aria-label={`Gallery page ${pageIndex + 1} of ${pages.length}`}
-            data-artwork-count={page.artworks.length}
-            data-gallery-page={pageIndex + 1}
-          >
-            <div className="editorial-gallery__paintings">
-              {page.artworks.map((artwork, artworkIndex) => {
-                const imageSize = EDITORIAL_IMAGE_SIZES[artwork.src];
-                const desktopPreviewSrc =
-                  EDITORIAL_PREVIEWS[artwork.src] ??
-                  artwork.scaleSrc ??
-                  artwork.src;
-                const hasPhysicalDimensions =
-                  artwork.width !== null && artwork.height !== null;
-                const physicalScaleStyle = hasPhysicalDimensions
-                  ? ({
-                      "--editorial-artwork-width-inches": artwork.width,
-                      "--editorial-artwork-height-inches": artwork.height,
-                    } as CSSProperties)
-                  : undefined;
-                if (!imageSize) {
-                  throw new Error(
-                    `Editorial gallery is missing image dimensions for ${artwork.src}.`,
+          return (
+            <figure
+              className="artwork editorial-gallery__artwork"
+              key={artwork.src}
+              data-gallery-index={artworkIndex + 1}
+              style={
+                {
+                  "--gallery-entry-delay": `${Math.min(artworkIndex, 12) * 35}ms`,
+                } as CSSProperties
+              }
+            >
+              <button
+                className="editorial-artwork-trigger"
+                type="button"
+                aria-haspopup="dialog"
+                aria-label={`Focus ${artworkLabel(artwork)}`}
+                onClick={(event) => {
+                  const currentSrc =
+                    event.currentTarget.querySelector("img")?.currentSrc;
+                  const currentPath = currentSrc
+                    ? new URL(currentSrc, window.location.href).pathname
+                    : previewSrc;
+
+                  onOpenArtwork(
+                    artwork,
+                    currentPath === artwork.src
+                      ? artwork.src
+                      : currentSrc || previewSrc,
+                    event.currentTarget,
                   );
-                }
-
-                return (
-                  <figure
-                    className={`artwork editorial-gallery__artwork${
-                      hasPhysicalDimensions
-                        ? ""
-                        : " editorial-gallery__artwork--context"
-                    }`}
-                    key={artwork.src}
-                    data-physical-scale={
-                      hasPhysicalDimensions ? "true" : "unavailable"
-                    }
-                    style={physicalScaleStyle}
-                  >
-                    <button
-                      className="editorial-artwork-trigger"
-                      type="button"
-                      aria-haspopup="dialog"
-                      aria-label={`Focus ${artworkLabel(artwork)}`}
-                      onClick={(event) => {
-                        const currentSrc =
-                          event.currentTarget.querySelector("img")?.currentSrc;
-                        const currentPath = currentSrc
-                          ? new URL(currentSrc, window.location.href).pathname
-                          : desktopPreviewSrc;
-
-                        onOpenArtwork(
-                          artwork,
-                          currentPath === artwork.src
-                            ? artwork.src
-                            : currentSrc || desktopPreviewSrc,
-                          event.currentTarget,
-                        );
-                      }}
-                    >
-                      <picture>
-                        {desktopPreviewSrc !== artwork.src && (
-                          <source
-                            media={`(min-width: ${MIN_LAPTOP_WIDTH}px)`}
-                            srcSet={desktopPreviewSrc}
-                          />
-                        )}
-                        <img
-                          src={artwork.src}
-                          width={imageSize.width}
-                          height={imageSize.height}
-                          alt=""
-                          loading={
-                            pageIndex === 0 && artworkIndex === 0
-                              ? "eager"
-                              : "lazy"
-                          }
-                          fetchPriority={
-                            pageIndex === 0 && artworkIndex === 0
-                              ? "high"
-                              : "auto"
-                          }
-                          decoding="async"
-                        />
-                      </picture>
-                    </button>
-                    <ArtworkCaption artwork={artwork} />
-                  </figure>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+                }}
+              >
+                <picture>
+                  {previewSrc !== artwork.src && (
+                    <source srcSet={previewSrc} />
+                  )}
+                  <img
+                    src={artwork.src}
+                    width={imageSize.width}
+                    height={imageSize.height}
+                    alt=""
+                    loading={artworkIndex === 0 ? "eager" : "lazy"}
+                    fetchPriority={artworkIndex === 0 ? "high" : "auto"}
+                    decoding="async"
+                  />
+                </picture>
+              </button>
+              <ArtworkCaption artwork={artwork} />
+            </figure>
+          );
+        })}
       </div>
     </div>
   );
@@ -599,9 +509,6 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   const scaleModeRef = useRef(false);
   const wheelLockRef = useRef(false);
   const wheelResetRef = useRef<number | null>(null);
-  const editorialSettleFrameRef = useRef<number | null>(null);
-  const editorialSettleTimerRef = useRef<number | null>(null);
-  const isEditorialSettlingRef = useRef(false);
   const focusedCloseRef = useRef<HTMLButtonElement>(null);
   const focusedTriggerRef = useRef<HTMLButtonElement | null>(null);
   const focusedCloseTimerRef = useRef<number | null>(null);
@@ -781,128 +688,6 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     return () => gallery.removeEventListener("wheel", handleWheel);
   }, [isScaleMode, roomIndex, setRoom]);
 
-  useEffect(() => {
-    if (isScaleMode || focusedArtwork) return;
-
-    const widthMedia = window.matchMedia(
-      `(min-width: ${MIN_LAPTOP_WIDTH}px)`,
-    );
-    const motionMedia = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    );
-    const cancelEditorialSettle = () => {
-      if (editorialSettleFrameRef.current !== null) {
-        window.cancelAnimationFrame(editorialSettleFrameRef.current);
-        editorialSettleFrameRef.current = null;
-      }
-      if (editorialSettleTimerRef.current !== null) {
-        window.clearTimeout(editorialSettleTimerRef.current);
-        editorialSettleTimerRef.current = null;
-      }
-      isEditorialSettlingRef.current = false;
-    };
-    const settleToNearestPage = () => {
-      if (
-        !widthMedia.matches ||
-        motionMedia.matches ||
-        isEditorialSettlingRef.current
-      ) {
-        return;
-      }
-
-      const gallery = galleryRef.current;
-      if (!gallery) return;
-      const currentScrollY = window.scrollY;
-      const pageTops = [
-        ...gallery.querySelectorAll<HTMLElement>(
-          ".editorial-gallery__room",
-        ),
-      ].map(
-        (page) => page.getBoundingClientRect().top + currentScrollY,
-      );
-      if (pageTops.length === 0) return;
-
-      const nearestPageTop = pageTops.reduce((nearest, pageTop) =>
-        Math.abs(pageTop - currentScrollY) <
-        Math.abs(nearest - currentScrollY)
-          ? pageTop
-          : nearest,
-      );
-      const distance = nearestPageTop - currentScrollY;
-      const settleThreshold = Math.min(96, window.innerHeight * 0.12);
-      if (Math.abs(distance) < 1 || Math.abs(distance) > settleThreshold) {
-        return;
-      }
-
-      const duration = 420 + (Math.abs(distance) / settleThreshold) * 140;
-      let startedAt: number | null = null;
-      isEditorialSettlingRef.current = true;
-
-      const animate = (timestamp: number) => {
-        startedAt ??= timestamp;
-        const progress = Math.min(1, (timestamp - startedAt) / duration);
-        const eased =
-          progress ** 3 * (progress * (progress * 6 - 15) + 10);
-        window.scrollTo(0, currentScrollY + distance * eased);
-
-        if (progress < 1) {
-          editorialSettleFrameRef.current = window.requestAnimationFrame(
-            animate,
-          );
-        } else {
-          editorialSettleFrameRef.current = null;
-          isEditorialSettlingRef.current = false;
-        }
-      };
-
-      editorialSettleFrameRef.current = window.requestAnimationFrame(animate);
-    };
-    const scheduleSettleFallback = () => {
-      if (isEditorialSettlingRef.current) return;
-      if (editorialSettleTimerRef.current !== null) {
-        window.clearTimeout(editorialSettleTimerRef.current);
-      }
-      editorialSettleTimerRef.current = window.setTimeout(() => {
-        editorialSettleTimerRef.current = null;
-        settleToNearestPage();
-      }, 160);
-    };
-    const supportsScrollEnd = "onscrollend" in window;
-
-    if (supportsScrollEnd) {
-      window.addEventListener("scrollend", settleToNearestPage);
-    } else {
-      window.addEventListener("scroll", scheduleSettleFallback, {
-        passive: true,
-      });
-    }
-    window.addEventListener("wheel", cancelEditorialSettle, { passive: true });
-    window.addEventListener("touchstart", cancelEditorialSettle, {
-      passive: true,
-    });
-    window.addEventListener("pointerdown", cancelEditorialSettle, {
-      passive: true,
-    });
-    window.addEventListener("keydown", cancelEditorialSettle);
-    widthMedia.addEventListener("change", cancelEditorialSettle);
-    motionMedia.addEventListener("change", cancelEditorialSettle);
-
-    return () => {
-      cancelEditorialSettle();
-      if (supportsScrollEnd) {
-        window.removeEventListener("scrollend", settleToNearestPage);
-      } else {
-        window.removeEventListener("scroll", scheduleSettleFallback);
-      }
-      window.removeEventListener("wheel", cancelEditorialSettle);
-      window.removeEventListener("touchstart", cancelEditorialSettle);
-      window.removeEventListener("pointerdown", cancelEditorialSettle);
-      window.removeEventListener("keydown", cancelEditorialSettle);
-      widthMedia.removeEventListener("change", cancelEditorialSettle);
-      motionMedia.removeEventListener("change", cancelEditorialSettle);
-    };
-  }, [editorialPages.length, focusedArtwork, isScaleMode]);
-
   useEffect(
     () => () => {
       if (wheelResetRef.current !== null) {
@@ -972,12 +757,12 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
             aria-pressed={isScaleMode}
             aria-label={
               isScaleMode
-                ? "Return to the standard gallery"
+                ? "Return to the gallery grid"
                 : "View all artworks to scale"
             }
             onClick={() => updateScaleMode(!isScaleMode)}
           >
-            {isScaleMode ? "standard" : "to scale"}
+            {isScaleMode ? "gallery" : "to scale"}
           </button>
         }
       />
@@ -991,7 +776,11 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
         tabIndex={-1}
         inert={focusedArtwork !== null}
         aria-hidden={focusedArtwork ? true : undefined}
-        aria-label={isScaleMode ? "Artworks shown at relative scale" : undefined}
+        aria-label={
+          isScaleMode
+            ? "Artworks shown at relative scale"
+            : "Artwork gallery grid"
+        }
         onKeyDown={handleKeyDown}
       >
         <GalleryArchitecture />
@@ -1052,7 +841,6 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
         ) : (
           <EditorialGallery
             pages={editorialPages}
-            referenceObject={STUDIO_STOOL}
             onOpenArtwork={openFocusedArtwork}
           />
         )}
@@ -1175,7 +963,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
             ? activeArtwork
               ? `${activeArtwork.title}. Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
               : `Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
-            : "Standard gallery opened."}
+            : "Gallery grid opened."}
       </p>
     </div>
   );

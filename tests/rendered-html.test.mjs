@@ -35,14 +35,16 @@ test("server-renders the artwork", async () => {
   assert.match(html, /src="\/signature\.png"/);
   assert.match(html, />to scale<\/button>/);
   assert.match(html, /aria-controls="gallery"/);
+  assert.match(html, /aria-pressed="false"/);
+  assert.match(html, /class="gallery gallery--editorial"/);
+  assert.match(html, /aria-label="Artwork gallery grid"/);
+  assert.doesNotMatch(html, /class="gallery gallery--scale"/);
   const imageTags = [
     ...html.matchAll(/<img[^>]+src="(\/artwork\/[^"]+)"[^>]*>/g),
   ];
   const imageSources = imageTags.map((match) => match[1]);
-  const desktopPreviewSources = [
-    ...html.matchAll(
-      /<source[^>]+media="\(min-width: 900px\)"[^>]+srcSet="([^"]+)"/g,
-    ),
+  const gridPreviewSources = [
+    ...html.matchAll(/<source[^>]+srcSet="([^"]+)"/g),
   ].map((match) => match[1]);
 
   assert.equal(imageSources.length, 25);
@@ -74,32 +76,32 @@ test("server-renders the artwork", async () => {
     "/artwork/still-life-egg.jpg",
     "/artwork/still-life.jpg",
   ]);
-  assert.deepEqual(desktopPreviewSources, [
+  assert.deepEqual(gridPreviewSources, [
     "/artwork/editorial/studio-pic-stanford-480.webp",
     "/artwork/editorial/DONTLOOKATME-480.webp",
-    "/artwork/editorial/DONTLOOK-sketch-320.webp",
-    "/artwork/scale/unravel.webp",
-    "/artwork/scale/blame.webp",
-    "/artwork/scale/handsoff.webp",
+    "/artwork/grid/DONTLOOK-sketch-640.webp",
+    "/artwork/grid/unravel-640.webp",
+    "/artwork/grid/blame-640.webp",
+    "/artwork/grid/handsoff-640.webp",
     "/artwork/editorial/rising-640.webp",
     "/artwork/editorial/heritage-520.webp",
-    "/artwork/scale/fresh.webp",
+    "/artwork/grid/fresh-640.webp",
     "/artwork/editorial/bastion-480.webp",
-    "/artwork/scale/anubis-dream.webp",
-    "/artwork/scale/the-walls-we-build.webp",
-    "/artwork/scale/wash.webp",
-    "/artwork/scale/mirror:rorrim.webp",
-    "/artwork/scale/inside-out.webp",
-    "/artwork/scale/reflection.webp",
-    "/artwork/scale/oasis.webp",
-    "/artwork/scale/roar.webp",
+    "/artwork/grid/anubis-dream-640.webp",
+    "/artwork/grid/the-walls-we-build-640.webp",
+    "/artwork/grid/wash-640.webp",
+    "/artwork/grid/mirror:rorrim-640.webp",
+    "/artwork/grid/inside-out-640.webp",
+    "/artwork/grid/reflection-640.webp",
+    "/artwork/grid/oasis-640.webp",
+    "/artwork/grid/roar-640.webp",
     "/artwork/editorial/cozy-640.webp",
-    "/artwork/scale/boots.webp",
-    "/artwork/scale/cows.webp",
-    "/artwork/scale/pick.webp",
-    "/artwork/scale/gotcha.webp",
-    "/artwork/scale/still-life-egg.webp",
-    "/artwork/scale/still-life.webp",
+    "/artwork/grid/boots-640.webp",
+    "/artwork/grid/cows-640.webp",
+    "/artwork/grid/pick-640.webp",
+    "/artwork/grid/gotcha-640.webp",
+    "/artwork/grid/still-life-egg-640.webp",
+    "/artwork/grid/still-life-640.webp",
   ]);
   assert.equal(
     html.match(/class="artwork-details"/g)?.length,
@@ -109,17 +111,22 @@ test("server-renders the artwork", async () => {
     html.match(/class="artwork editorial-gallery__artwork/g)?.length,
     imageSources.length,
   );
+  assert.equal(html.match(/data-gallery-view="grid"/g)?.length, 1);
   assert.deepEqual(
-    [...html.matchAll(/data-artwork-count="(\d+)"/g)].map((match) =>
-      Number.parseInt(match[1], 10),
-    ),
-    [3, 6, 4, 4, 8],
-  );
-  assert.deepEqual(
-    [...html.matchAll(/data-gallery-page="(\d+)"/g)].map(
+    [...html.matchAll(/data-gallery-index="(\d+)"/g)].map(
       (match) => Number.parseInt(match[1], 10),
     ),
-    [1, 2, 3, 4, 5],
+    Array.from({ length: imageSources.length }, (_, index) => index + 1),
+  );
+  assert.doesNotMatch(html, /data-gallery-page|data-artwork-count/);
+  assert.deepEqual(
+    [...html.matchAll(/--gallery-entry-delay:(\d+)ms/g)].map((match) =>
+      Number.parseInt(match[1], 10),
+    ),
+    Array.from(
+      { length: imageSources.length },
+      (_, index) => Math.min(index, 12) * 35,
+    ),
   );
   assert.equal(
     html.match(/class="editorial-artwork-trigger"/g)?.length,
@@ -129,9 +136,6 @@ test("server-renders the artwork", async () => {
     html.match(/aria-haspopup="dialog"/g)?.length,
     imageSources.length,
   );
-  assert.equal(html.match(/data-physical-scale="true"/g)?.length, 24);
-  assert.equal(html.match(/data-physical-scale="unavailable"/g)?.length, 1);
-
   for (const [tag] of imageTags) {
     assert.match(tag, /width="\d+"/);
     assert.match(tag, /height="\d+"/);
@@ -148,6 +152,10 @@ test("server-renders the artwork", async () => {
     imageTags.filter(([tag]) => tag.includes('fetchPriority="high"')).length,
     1,
   );
+  assert.equal(
+    imageTags.filter(([tag]) => tag.includes('decoding="async"')).length,
+    imageSources.length,
+  );
 
   for (const src of imageSources) {
     assert.equal(
@@ -157,14 +165,15 @@ test("server-renders the artwork", async () => {
     );
   }
 
-  const desktopPreviewBytes = desktopPreviewSources.reduce((sum, src) => {
+  const gridPreviewBytes = gridPreviewSources.reduce((sum, src) => {
     const asset = new URL(`../public${src}`, import.meta.url);
     assert.equal(existsSync(asset), true, `${src} should exist`);
     return sum + statSync(asset).size;
   }, 0);
+  assert.equal(gridPreviewBytes, 1_532_088);
   assert.ok(
-    desktopPreviewBytes < 1024 * 1024,
-    "desktop room previews should stay below 1 MiB",
+    gridPreviewBytes < 2 * 1024 * 1024,
+    "grid previews should stay below 2 MiB",
   );
 
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|ruler/i);
@@ -230,8 +239,6 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     "/gallery/windowlight.webp",
     "/gallery/plaster-grain.webp",
     "/gallery/floor-grain.webp",
-    "/gallery/studio-stool@1x.webp",
-    "/gallery/studio-stool@2x.webp",
   ];
   const editorialHashes = {
     "/artwork/editorial/studio-pic-stanford-480.webp":
@@ -258,7 +265,7 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     }, 0);
 
   assert.equal(byteTotal(editorialSources), 413_388);
-  assert.equal(byteTotal(environmentSources), 67_546);
+  assert.equal(byteTotal(environmentSources), 32_946);
 
   for (const [src, expected] of Object.entries(editorialHashes)) {
     const bytes = readFileSync(new URL(`../public${src}`, import.meta.url));
@@ -279,12 +286,23 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   );
 
   assert.match(galleryStyles, /url\("\/gallery\/windowlight\.webp"\)/);
-  assert.match(galleryStyles, /--editorial-pixels-per-inch: max\(/);
-  assert.match(galleryStyles, /width: max\(\s*44px,/);
+  assert.match(galleryStyles, /\.editorial-gallery__grid\s*{/);
+  assert.match(galleryStyles, /grid-template-columns: repeat\(3,/);
+  assert.match(galleryStyles, /@keyframes gallery-grid-item-in/);
   assert.match(galleryStyles, /\.focused-artwork-image__full/);
   assert.doesNotMatch(galleryStyles, /scroll-snap-type|cursor: zoom-in/);
-  assert.match(gallerySource, /settleThreshold = Math\.min\(96,/);
-  assert.match(gallerySource, /addEventListener\("scrollend"/);
+  assert.match(
+    gallerySource,
+    /const \[isScaleMode, setIsScaleMode\] = useState\(false\)/,
+  );
+  assert.match(gallerySource, /Gallery grid opened\./);
+  assert.match(gallerySource, /className="scale-gallery-track"/);
+  assert.match(gallerySource, /className="scale-gallery-room"/);
+  assert.match(gallerySource, /aria-modal="true"/);
+  assert.doesNotMatch(
+    gallerySource,
+    /editorial-gallery__room|settleToNearestPage|settleThreshold|scrollend/,
+  );
   assert.doesNotMatch(galleryStyles, /mix-blend-mode|mask-image/);
   assert.doesNotMatch(buildConfig, /openai|sites/i);
 });
