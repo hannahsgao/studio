@@ -17,39 +17,21 @@ const TARGET_WORKS_PER_WALL = 7;
 const ARTWORK_GAP_INCHES = 14;
 const MAX_PIXELS_PER_INCH = 5;
 const MIN_LAPTOP_WIDTH = 900;
-const EDITORIAL_WORKS_PER_ROOM = 4;
+const EDITORIAL_MIN_FIGURE_WIDTH = 88;
 
-const FEATURED_EDITORIAL_SOURCES = [
-  "/artwork/rising.jpg",
-  "/artwork/heritage.jpg",
-  "/artwork/bastion.jpg",
-  "/artwork/cozy.jpg",
-] as const;
-
-const EDITORIAL_PREVIEWS: Record<
-  (typeof FEATURED_EDITORIAL_SOURCES)[number],
-  { src: string; width: number; height: number }
-> = {
-  "/artwork/rising.jpg": {
-    src: "/artwork/editorial/rising-640.webp",
-    width: 640,
-    height: 1246,
-  },
-  "/artwork/heritage.jpg": {
-    src: "/artwork/editorial/heritage-520.webp",
-    width: 520,
-    height: 682,
-  },
-  "/artwork/bastion.jpg": {
-    src: "/artwork/editorial/bastion-480.webp",
-    width: 480,
-    height: 611,
-  },
-  "/artwork/cozy.jpg": {
-    src: "/artwork/editorial/cozy-640.webp",
-    width: 640,
-    height: 466,
-  },
+const EDITORIAL_PREVIEWS: Record<string, string> = {
+  "/artwork/studio-pic-stanford.jpg":
+    "/artwork/editorial/studio-pic-stanford-480.webp",
+  "/artwork/DONTLOOK-sketch.jpg":
+    "/artwork/editorial/DONTLOOK-sketch-320.webp",
+  "/artwork/DONTLOOKATME.jpg":
+    "/artwork/editorial/DONTLOOKATME-480.webp",
+  "/artwork/rising.jpg": "/artwork/editorial/rising-640.webp",
+  "/artwork/heritage.jpg": "/artwork/editorial/heritage-520.webp",
+  "/artwork/bastion.jpg": "/artwork/editorial/bastion-480.webp",
+  "/artwork/cozy.jpg": "/artwork/editorial/cozy-640.webp",
+  "/artwork/fresh-closeup.jpg":
+    "/artwork/editorial/fresh-closeup-320.webp",
 };
 
 const EDITORIAL_IMAGE_SIZES: Record<
@@ -94,6 +76,11 @@ type ScaleRoom = {
   widthInches: number;
   heightInches: number;
   yearLabel: string;
+};
+
+type EditorialCollection = {
+  year: string;
+  artworks: Artwork[];
 };
 
 type RoomPartition = {
@@ -274,35 +261,77 @@ function artworkLabel(artwork: Artwork) {
     .join(", ");
 }
 
-function makeEditorialRooms(artworks: Artwork[]) {
-  const artworksBySource = new Map(
-    artworks.map((artwork) => [artwork.src, artwork]),
-  );
-  const featured = FEATURED_EDITORIAL_SOURCES.flatMap((source) => {
-    const artwork = artworksBySource.get(source);
-    return artwork ? [artwork] : [];
-  });
-  const featuredSources = new Set(featured.map((artwork) => artwork.src));
-  const ordered = [
-    ...featured,
-    ...artworks.filter((artwork) => !featuredSources.has(artwork.src)),
-  ];
+function makeEditorialCollections(artworks: Artwork[]) {
+  const collections: EditorialCollection[] = [];
+
+  for (const artwork of artworks) {
+    const current = collections.at(-1);
+    if (!current || current.year !== artwork.year) {
+      collections.push({ year: artwork.year, artworks: [artwork] });
+    } else {
+      current.artworks.push(artwork);
+    }
+  }
 
   if (
-    ordered.length !== artworks.length ||
-    new Set(ordered.map((artwork) => artwork.src)).size !== artworks.length
+    collections.flatMap((collection) => collection.artworks).length !==
+      artworks.length ||
+    new Set(artworks.map((artwork) => artwork.src)).size !== artworks.length
   ) {
     throw new Error("Editorial gallery requires unique artwork sources.");
   }
 
-  return Array.from(
-    { length: Math.ceil(ordered.length / EDITORIAL_WORKS_PER_ROOM) },
-    (_, roomIndex) =>
-      ordered.slice(
-        roomIndex * EDITORIAL_WORKS_PER_ROOM,
-        (roomIndex + 1) * EDITORIAL_WORKS_PER_ROOM,
-      ),
+  return collections;
+}
+
+function getEditorialScaleStyle(collections: EditorialCollection[]) {
+  const widthLimits = collections.flatMap((collection) => {
+    const physicalWidths = collection.artworks
+      .filter(
+        (artwork) => artwork.width !== null && artwork.height !== null,
+      )
+      .map((artwork) => artwork.width ?? 0)
+      .sort((a, b) => b - a);
+    const contextCount = collection.artworks.length - physicalWidths.length;
+    const gapCount = Math.max(0, collection.artworks.length - 1);
+
+    return physicalWidths.map((_, activeIndex) => {
+      const activeWidths = physicalWidths.slice(0, activeIndex + 1);
+      const activeWidthTotal = activeWidths.reduce(
+        (sum, width) => sum + width,
+        0,
+      );
+      const fixedCaptionWidth =
+        (physicalWidths.length - activeWidths.length) *
+        EDITORIAL_MIN_FIGURE_WIDTH;
+      const subtractions = [
+        "var(--editorial-side-gutter)",
+        "var(--editorial-side-gutter)",
+        ...Array.from(
+          { length: gapCount },
+          () => "var(--editorial-painting-gap)",
+        ),
+        ...Array.from(
+          { length: contextCount },
+          () => "var(--editorial-context-width)",
+        ),
+        ...(fixedCaptionWidth > 0 ? [`${fixedCaptionWidth}px`] : []),
+      ];
+
+      return `calc((100vw - ${subtractions.join(" - ")}) / ${activeWidthTotal})`;
+    });
+  });
+  const tallestArtwork = Math.max(
+    1,
+    ...collections.flatMap((collection) =>
+      collection.artworks.map((artwork) => artwork.height ?? 0),
+    ),
   );
+
+  return {
+    "--editorial-width-limit": `min(${widthLimits.join(", ")})`,
+    "--editorial-tallest-artwork": tallestArtwork,
+  } as CSSProperties;
 }
 
 function GalleryArchitecture() {
@@ -316,16 +345,23 @@ function GalleryArchitecture() {
 }
 
 function EditorialGallery({
-  artworks,
+  collections,
   referenceObject,
+  onOpenArtwork,
 }: {
-  artworks: Artwork[];
+  collections: EditorialCollection[];
   referenceObject: GalleryReferenceObject | null;
+  onOpenArtwork: (
+    artwork: Artwork,
+    previewSrc: string,
+    trigger: HTMLButtonElement,
+  ) => void;
 }) {
-  const rooms = makeEditorialRooms(artworks);
-
   return (
-    <div className="editorial-gallery">
+    <div
+      className="editorial-gallery"
+      style={getEditorialScaleStyle(collections)}
+    >
       {referenceObject && (
         <div
           className="editorial-gallery__reference"
@@ -341,22 +377,29 @@ function EditorialGallery({
       )}
 
       <div className="editorial-gallery__rooms">
-        {rooms.map((room, roomIndex) => (
+        {collections.map((collection, collectionIndex) => (
           <section
             className="editorial-gallery__room"
-            key={`editorial-room-${roomIndex + 1}`}
-            aria-label={`Editorial gallery room ${roomIndex + 1} of ${rooms.length}`}
-            data-artwork-count={room.length}
+            key={collection.year}
+            aria-label={`${collection.year} artwork collection`}
+            data-artwork-count={collection.artworks.length}
+            data-collection-year={collection.year}
           >
             <div className="editorial-gallery__paintings">
-              {room.map((artwork, artworkIndex) => {
-                const preview =
-                  EDITORIAL_PREVIEWS[
-                    artwork.src as keyof typeof EDITORIAL_PREVIEWS
-                  ];
-                const imageSize =
-                  preview ?? EDITORIAL_IMAGE_SIZES[artwork.src];
-
+              {collection.artworks.map((artwork, artworkIndex) => {
+                const imageSize = EDITORIAL_IMAGE_SIZES[artwork.src];
+                const desktopPreviewSrc =
+                  EDITORIAL_PREVIEWS[artwork.src] ??
+                  artwork.scaleSrc ??
+                  artwork.src;
+                const hasPhysicalDimensions =
+                  artwork.width !== null && artwork.height !== null;
+                const physicalScaleStyle = hasPhysicalDimensions
+                  ? ({
+                      "--editorial-artwork-width-inches": artwork.width,
+                      "--editorial-artwork-height-inches": artwork.height,
+                    } as CSSProperties)
+                  : undefined;
                 if (!imageSize) {
                   throw new Error(
                     `Editorial gallery is missing image dimensions for ${artwork.src}.`,
@@ -365,25 +408,64 @@ function EditorialGallery({
 
                 return (
                   <figure
-                    className="artwork editorial-gallery__artwork"
+                    className={`artwork editorial-gallery__artwork${
+                      hasPhysicalDimensions
+                        ? ""
+                        : " editorial-gallery__artwork--context"
+                    }`}
                     key={artwork.src}
+                    data-physical-scale={
+                      hasPhysicalDimensions ? "true" : "unavailable"
+                    }
+                    style={physicalScaleStyle}
                   >
-                    <img
-                      src={preview?.src ?? artwork.src}
-                      width={imageSize.width}
-                      height={imageSize.height}
-                      alt={`${artwork.title} by Hannah Gao`}
-                      loading={roomIndex === 0 ? "eager" : "lazy"}
-                      fetchPriority={
-                        roomIndex === 0 && artworkIndex === 0 ? "high" : "auto"
-                      }
-                      decoding="async"
-                      style={
-                        artwork.displayScale
-                          ? { width: `${artwork.displayScale * 100}%` }
-                          : undefined
-                      }
-                    />
+                    <button
+                      className="editorial-artwork-trigger"
+                      type="button"
+                      aria-haspopup="dialog"
+                      aria-label={`Focus ${artworkLabel(artwork)}`}
+                      onClick={(event) => {
+                        const currentSrc =
+                          event.currentTarget.querySelector("img")?.currentSrc;
+                        const currentPath = currentSrc
+                          ? new URL(currentSrc, window.location.href).pathname
+                          : desktopPreviewSrc;
+
+                        onOpenArtwork(
+                          artwork,
+                          currentPath === artwork.src
+                            ? artwork.src
+                            : currentSrc || desktopPreviewSrc,
+                          event.currentTarget,
+                        );
+                      }}
+                    >
+                      <picture>
+                        {desktopPreviewSrc !== artwork.src && (
+                          <source
+                            media={`(min-width: ${MIN_LAPTOP_WIDTH}px)`}
+                            srcSet={desktopPreviewSrc}
+                          />
+                        )}
+                        <img
+                          src={artwork.src}
+                          width={imageSize.width}
+                          height={imageSize.height}
+                          alt=""
+                          loading={
+                            collectionIndex === 0 && artworkIndex === 0
+                              ? "eager"
+                              : "lazy"
+                          }
+                          fetchPriority={
+                            collectionIndex === 0 && artworkIndex === 0
+                              ? "high"
+                              : "auto"
+                          }
+                          decoding="async"
+                        />
+                      </picture>
+                    </button>
                     <ArtworkCaption artwork={artwork} />
                   </figure>
                 );
@@ -396,8 +478,13 @@ function EditorialGallery({
   );
 }
 
-function FocusedArtworkImage({ artwork }: { artwork: Artwork }) {
-  const previewSrc = artwork.scaleSrc ?? artwork.src;
+function FocusedArtworkImage({
+  artwork,
+  previewSrc,
+}: {
+  artwork: Artwork;
+  previewSrc: string;
+}) {
   const [displaySrc, setDisplaySrc] = useState(previewSrc);
 
   useEffect(() => {
@@ -440,6 +527,10 @@ function FocusedArtworkImage({ artwork }: { artwork: Artwork }) {
 
 export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   const rooms = useMemo(() => makeScaleRooms(artworks), [artworks]);
+  const editorialCollections = useMemo(
+    () => makeEditorialCollections(artworks),
+    [artworks],
+  );
   const galleryRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const pendingFocusRef = useRef<"toggle" | "gallery" | null>(null);
@@ -454,13 +545,26 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   const [pixelsPerInch, setPixelsPerInch] = useState(4);
   const [activeArtwork, setActiveArtwork] = useState<Artwork | null>(null);
   const [focusedArtwork, setFocusedArtwork] = useState<Artwork | null>(null);
+  const [focusedPreviewSrc, setFocusedPreviewSrc] = useState<string | null>(
+    null,
+  );
   const [isFocusClosing, setIsFocusClosing] = useState(false);
+
+  const openFocusedArtwork = useCallback(
+    (artwork: Artwork, previewSrc: string, trigger: HTMLButtonElement) => {
+      focusedTriggerRef.current = trigger;
+      setFocusedPreviewSrc(previewSrc);
+      setFocusedArtwork(artwork);
+    },
+    [],
+  );
 
   const closeFocusedArtwork = useCallback(() => {
     if (isFocusClosing) return;
 
     const finish = () => {
       setFocusedArtwork(null);
+      setFocusedPreviewSrc(null);
       setIsFocusClosing(false);
       focusedCloseTimerRef.current = null;
       window.requestAnimationFrame(() => {
@@ -486,6 +590,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
       setRoomIndex(boundedRoom);
       setActiveArtwork(null);
       setFocusedArtwork(null);
+      setFocusedPreviewSrc(null);
     },
     [rooms.length],
   );
@@ -502,6 +607,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
           focusedCloseTimerRef.current = null;
         }
         setFocusedArtwork(null);
+        setFocusedPreviewSrc(null);
         setIsFocusClosing(false);
         focusedTriggerRef.current = null;
       }
@@ -520,15 +626,23 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   );
 
   useEffect(() => {
-    if (!isScaleMode) return;
+    if (!isScaleMode && !focusedArtwork) return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [focusedArtwork, isScaleMode]);
+
+  useEffect(() => {
+    if (!isScaleMode) return;
+
     document.body.classList.add("scale-gallery-is-open");
     galleryRef.current?.focus({ preventScroll: true });
 
     return () => {
-      document.body.style.overflow = previousOverflow;
       document.body.classList.remove("scale-gallery-is-open");
     };
   }, [isScaleMode]);
@@ -716,6 +830,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
                     <figure className="scale-artwork" key={artwork.src}>
                       <button
                         type="button"
+                        aria-haspopup="dialog"
                         aria-label={`Focus ${artworkLabel(artwork)}`}
                         style={{
                           width: (artwork.width ?? 0) * pixelsPerInch,
@@ -723,10 +838,13 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
                         }}
                         onFocus={() => setActiveArtwork(artwork)}
                         onPointerEnter={() => setActiveArtwork(artwork)}
-                        onClick={(event) => {
-                          focusedTriggerRef.current = event.currentTarget;
-                          setFocusedArtwork(artwork);
-                        }}
+                        onClick={(event) =>
+                          openFocusedArtwork(
+                            artwork,
+                            artwork.scaleSrc ?? artwork.src,
+                            event.currentTarget,
+                          )
+                        }
                       >
                         <img
                           src={artwork.scaleSrc ?? artwork.src}
@@ -745,7 +863,11 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
             ))}
           </div>
         ) : (
-          <EditorialGallery artworks={artworks} referenceObject={STUDIO_STOOL} />
+          <EditorialGallery
+            collections={editorialCollections}
+            referenceObject={STUDIO_STOOL}
+            onOpenArtwork={openFocusedArtwork}
+          />
         )}
 
         {isScaleMode && (
@@ -816,7 +938,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
         )}
       </main>
 
-      {isScaleMode && focusedArtwork && (
+      {focusedArtwork && focusedPreviewSrc && (
         <section
           className={`focused-artwork-overlay${
             isFocusClosing ? " focused-artwork-overlay--closing" : ""
@@ -849,20 +971,23 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
           </button>
 
           <figure className="focused-artwork">
-            <FocusedArtworkImage artwork={focusedArtwork} />
+            <FocusedArtworkImage
+              artwork={focusedArtwork}
+              previewSrc={focusedPreviewSrc}
+            />
             <ArtworkCaption artwork={focusedArtwork} />
           </figure>
         </section>
       )}
 
       <p className="visually-hidden" aria-live="polite">
-        {isScaleMode
-          ? focusedArtwork
-            ? `${focusedArtwork.title} focused. Press Escape to close.`
-            : activeArtwork
-            ? `${activeArtwork.title}. Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
-            : `Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
-          : "Standard gallery opened."}
+        {focusedArtwork
+          ? `${focusedArtwork.title} focused. Press Escape to close.`
+          : isScaleMode
+            ? activeArtwork
+              ? `${activeArtwork.title}. Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
+              : `Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
+            : "Standard gallery opened."}
       </p>
     </div>
   );
