@@ -8,8 +8,8 @@ The artwork portfolio served at [hannahgao.studio](https://hannahgao.studio).
 2. Add its entry to `app/artworks.ts`, including `title`, `width`, `height`,
    `medium`, and `year`. Width and height are physical dimensions in inches.
    Set both dimensions to `null` when they should not be displayed.
-3. The gallery sorts years newest-to-oldest automatically. Move entries to
-   rearrange works within the same year, or comment out an object to hide it.
+3. Add the source to `EDITORIAL_PAGES` in `app/gallery-explorer.tsx` to place it
+   on a standard gallery wall, or comment out its manifest object to hide it.
    Add an optional `displayScale` such as `0.8` to render an image smaller
    without changing its physical dimensions. Set `scaleView: false` for detail
    or context photographs that should remain in the standard gallery only. Use

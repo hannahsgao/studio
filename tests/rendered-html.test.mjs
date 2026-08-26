@@ -45,31 +45,30 @@ test("server-renders the artwork", async () => {
     ),
   ].map((match) => match[1]);
 
-  assert.equal(imageSources.length, 27);
+  assert.equal(imageSources.length, 26);
   assert.equal(new Set(imageSources).size, imageSources.length);
   assert.deepEqual(imageSources, [
     "/artwork/studio-pic-stanford.jpg",
     "/artwork/DONTLOOK-sketch.jpg",
     "/artwork/DONTLOOKATME.jpg",
     "/artwork/rising.jpg",
-    "/artwork/heritage.jpg",
-    "/artwork/tiedup.jpg",
-    "/artwork/bastion.jpg",
-    "/artwork/fresh.jpg",
-    "/artwork/fresh-closeup.jpg",
-    "/artwork/roar.jpg",
     "/artwork/unravel.jpg",
     "/artwork/blame.jpg",
     "/artwork/handsoff.jpg",
-    "/artwork/cozy.jpg",
     "/artwork/anubis-dream.jpg",
+    "/artwork/roar.jpg",
+    "/artwork/heritage.jpg",
+    "/artwork/bastion.jpg",
+    "/artwork/fresh.jpg",
+    "/artwork/tiedup.jpg",
     "/artwork/wash.jpg",
     "/artwork/mirror:rorrim.jpg",
     "/artwork/inside-out.jpg",
-    "/artwork/the-walls-we-build.jpg",
-    "/artwork/boots.jpg",
-    "/artwork/reflection.jpg",
     "/artwork/oasis.jpg",
+    "/artwork/the-walls-we-build.jpg",
+    "/artwork/reflection.jpg",
+    "/artwork/cozy.jpg",
+    "/artwork/boots.jpg",
     "/artwork/pick.jpg",
     "/artwork/gotcha.jpg",
     "/artwork/cows.jpg",
@@ -81,24 +80,23 @@ test("server-renders the artwork", async () => {
     "/artwork/editorial/DONTLOOK-sketch-320.webp",
     "/artwork/editorial/DONTLOOKATME-480.webp",
     "/artwork/editorial/rising-640.webp",
-    "/artwork/editorial/heritage-520.webp",
-    "/artwork/scale/tiedup.webp",
-    "/artwork/editorial/bastion-480.webp",
-    "/artwork/scale/fresh.webp",
-    "/artwork/editorial/fresh-closeup-320.webp",
-    "/artwork/scale/roar.webp",
     "/artwork/scale/unravel.webp",
     "/artwork/scale/blame.webp",
     "/artwork/scale/handsoff.webp",
-    "/artwork/editorial/cozy-640.webp",
     "/artwork/scale/anubis-dream.webp",
+    "/artwork/scale/roar.webp",
+    "/artwork/editorial/heritage-520.webp",
+    "/artwork/editorial/bastion-480.webp",
+    "/artwork/scale/fresh.webp",
+    "/artwork/scale/tiedup.webp",
     "/artwork/scale/wash.webp",
     "/artwork/scale/mirror:rorrim.webp",
     "/artwork/scale/inside-out.webp",
-    "/artwork/scale/the-walls-we-build.webp",
-    "/artwork/scale/boots.webp",
-    "/artwork/scale/reflection.webp",
     "/artwork/scale/oasis.webp",
+    "/artwork/scale/the-walls-we-build.webp",
+    "/artwork/scale/reflection.webp",
+    "/artwork/editorial/cozy-640.webp",
+    "/artwork/scale/boots.webp",
     "/artwork/scale/pick.webp",
     "/artwork/scale/gotcha.webp",
     "/artwork/scale/cows.webp",
@@ -117,13 +115,13 @@ test("server-renders the artwork", async () => {
     [...html.matchAll(/data-artwork-count="(\d+)"/g)].map((match) =>
       Number.parseInt(match[1], 10),
     ),
-    [3, 6, 4, 6, 3, 3, 2],
+    [3, 6, 4, 6, 7],
   );
   assert.deepEqual(
-    [...html.matchAll(/data-collection-year="(\d+)"/g)].map(
-      (match) => match[1],
+    [...html.matchAll(/data-gallery-page="(\d+)"/g)].map(
+      (match) => Number.parseInt(match[1], 10),
     ),
-    ["2026", "2024", "2023", "2022", "2021", "2020", "2018"],
+    [1, 2, 3, 4, 5],
   );
   assert.equal(
     html.match(/class="editorial-artwork-trigger"/g)?.length,
@@ -133,7 +131,7 @@ test("server-renders the artwork", async () => {
     html.match(/aria-haspopup="dialog"/g)?.length,
     imageSources.length,
   );
-  assert.equal(html.match(/data-physical-scale="true"/g)?.length, 26);
+  assert.equal(html.match(/data-physical-scale="true"/g)?.length, 25);
   assert.equal(html.match(/data-physical-scale="unavailable"/g)?.length, 1);
 
   for (const [tag] of imageTags) {
@@ -146,7 +144,7 @@ test("server-renders the artwork", async () => {
   );
   assert.equal(
     imageTags.filter(([tag]) => tag.includes('loading="lazy"')).length,
-    26,
+    25,
   );
   assert.equal(
     imageTags.filter(([tag]) => tag.includes('fetchPriority="high"')).length,
@@ -225,7 +223,6 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     "/artwork/editorial/studio-pic-stanford-480.webp",
     "/artwork/editorial/DONTLOOK-sketch-320.webp",
     "/artwork/editorial/DONTLOOKATME-480.webp",
-    "/artwork/editorial/fresh-closeup-320.webp",
     "/artwork/editorial/rising-640.webp",
     "/artwork/editorial/heritage-520.webp",
     "/artwork/editorial/bastion-480.webp",
@@ -245,8 +242,6 @@ test("editorial gallery assets stay faithful and lightweight", () => {
       "1a19730a5397f1667b874c3804f112ad8ef2d585d274f5b015a8623efe6fb371",
     "/artwork/editorial/DONTLOOKATME-480.webp":
       "42fdce7843de68a3e2a0bf93ac23f036b80b9595c1a1501ef166f75e764c8857",
-    "/artwork/editorial/fresh-closeup-320.webp":
-      "32c520be82c53914a83edae2ccc6d224904a01a42847a4a17983827f8b38b6db",
     "/artwork/editorial/rising-640.webp":
       "f31d222d73eebd09e78845a7e5fe7caf09327ecb356b0b82b446f1736a57b8fb",
     "/artwork/editorial/heritage-520.webp":
@@ -264,7 +259,7 @@ test("editorial gallery assets stay faithful and lightweight", () => {
       return sum + statSync(asset).size;
     }, 0);
 
-  assert.equal(byteTotal(editorialSources), 443_578);
+  assert.equal(byteTotal(editorialSources), 413_388);
   assert.equal(byteTotal(environmentSources), 124_380);
 
   for (const [src, expected] of Object.entries(editorialHashes)) {
@@ -276,6 +271,10 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     new URL("../app/globals.css", import.meta.url),
     "utf8",
   );
+  const gallerySource = readFileSync(
+    new URL("../app/gallery-explorer.tsx", import.meta.url),
+    "utf8",
+  );
   const buildConfig = readFileSync(
     new URL("../vite.config.ts", import.meta.url),
     "utf8",
@@ -284,7 +283,10 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   assert.match(galleryStyles, /url\("\/gallery\/windowlight-soft\.webp"\)/);
   assert.match(galleryStyles, /--editorial-pixels-per-inch: max\(/);
   assert.match(galleryStyles, /width: max\(\s*44px,/);
-  assert.match(galleryStyles, /scroll-snap-type: y proximity/);
+  assert.match(galleryStyles, /\.focused-artwork-image__full/);
+  assert.doesNotMatch(galleryStyles, /scroll-snap-type|cursor: zoom-in/);
+  assert.match(gallerySource, /settleThreshold = Math\.min\(96,/);
+  assert.match(gallerySource, /addEventListener\("scrollend"/);
   assert.doesNotMatch(galleryStyles, /mix-blend-mode|mask-image/);
   assert.doesNotMatch(buildConfig, /openai|sites/i);
 });

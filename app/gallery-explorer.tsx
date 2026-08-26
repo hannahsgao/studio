@@ -17,7 +17,59 @@ const TARGET_WORKS_PER_WALL = 7;
 const ARTWORK_GAP_INCHES = 14;
 const MAX_PIXELS_PER_INCH = 5;
 const MIN_LAPTOP_WIDTH = 900;
-const EDITORIAL_MIN_FIGURE_WIDTH = 88;
+const EDITORIAL_PAGES = [
+  {
+    id: "studio-and-dontlook",
+    sources: [
+      "/artwork/studio-pic-stanford.jpg",
+      "/artwork/DONTLOOK-sketch.jpg",
+      "/artwork/DONTLOOKATME.jpg",
+    ],
+  },
+  {
+    id: "rising-and-2023",
+    sources: [
+      "/artwork/rising.jpg",
+      "/artwork/unravel.jpg",
+      "/artwork/blame.jpg",
+      "/artwork/handsoff.jpg",
+      "/artwork/anubis-dream.jpg",
+      "/artwork/roar.jpg",
+    ],
+  },
+  {
+    id: "heritage-and-tied-up",
+    sources: [
+      "/artwork/heritage.jpg",
+      "/artwork/bastion.jpg",
+      "/artwork/fresh.jpg",
+      "/artwork/tiedup.jpg",
+    ],
+  },
+  {
+    id: "works-on-paper-and-reflection",
+    sources: [
+      "/artwork/wash.jpg",
+      "/artwork/mirror:rorrim.jpg",
+      "/artwork/inside-out.jpg",
+      "/artwork/oasis.jpg",
+      "/artwork/the-walls-we-build.jpg",
+      "/artwork/reflection.jpg",
+    ],
+  },
+  {
+    id: "small-works-and-still-lifes",
+    sources: [
+      "/artwork/cozy.jpg",
+      "/artwork/boots.jpg",
+      "/artwork/pick.jpg",
+      "/artwork/gotcha.jpg",
+      "/artwork/cows.jpg",
+      "/artwork/still-life-egg.jpg",
+      "/artwork/still-life.jpg",
+    ],
+  },
+] as const;
 
 const EDITORIAL_PREVIEWS: Record<string, string> = {
   "/artwork/studio-pic-stanford.jpg":
@@ -30,8 +82,6 @@ const EDITORIAL_PREVIEWS: Record<string, string> = {
   "/artwork/heritage.jpg": "/artwork/editorial/heritage-520.webp",
   "/artwork/bastion.jpg": "/artwork/editorial/bastion-480.webp",
   "/artwork/cozy.jpg": "/artwork/editorial/cozy-640.webp",
-  "/artwork/fresh-closeup.jpg":
-    "/artwork/editorial/fresh-closeup-320.webp",
 };
 
 const EDITORIAL_IMAGE_SIZES: Record<
@@ -46,7 +96,6 @@ const EDITORIAL_IMAGE_SIZES: Record<
   "/artwork/boots.jpg": { width: 1521, height: 2000 },
   "/artwork/cows.jpg": { width: 2000, height: 1988 },
   "/artwork/cozy.jpg": { width: 2000, height: 1457 },
-  "/artwork/fresh-closeup.jpg": { width: 1500, height: 2000 },
   "/artwork/fresh.jpg": { width: 1321, height: 2000 },
   "/artwork/gotcha.jpg": { width: 2000, height: 1500 },
   "/artwork/handsoff.jpg": { width: 2000, height: 1984 },
@@ -78,8 +127,8 @@ type ScaleRoom = {
   yearLabel: string;
 };
 
-type EditorialCollection = {
-  year: string;
+type EditorialPage = {
+  id: string;
   artworks: Artwork[];
 };
 
@@ -261,70 +310,67 @@ function artworkLabel(artwork: Artwork) {
     .join(", ");
 }
 
-function makeEditorialCollections(artworks: Artwork[]) {
-  const collections: EditorialCollection[] = [];
-
-  for (const artwork of artworks) {
-    const current = collections.at(-1);
-    if (!current || current.year !== artwork.year) {
-      collections.push({ year: artwork.year, artworks: [artwork] });
-    } else {
-      current.artworks.push(artwork);
-    }
-  }
-
-  if (
-    collections.flatMap((collection) => collection.artworks).length !==
-      artworks.length ||
-    new Set(artworks.map((artwork) => artwork.src)).size !== artworks.length
-  ) {
+function makeEditorialPages(artworks: Artwork[]) {
+  const artworkBySource = new Map(
+    artworks.map((artwork) => [artwork.src, artwork]),
+  );
+  if (artworkBySource.size !== artworks.length) {
     throw new Error("Editorial gallery requires unique artwork sources.");
   }
 
-  return collections;
+  const assignedSources = new Set<string>();
+  const pages: EditorialPage[] = EDITORIAL_PAGES.map((page) => ({
+    id: page.id,
+    artworks: page.sources.flatMap((source) => {
+      const artwork = artworkBySource.get(source);
+      if (!artwork) return [];
+      assignedSources.add(source);
+      return [artwork];
+    }),
+  })).filter((page) => page.artworks.length > 0);
+  const unassigned = artworks.filter(
+    (artwork) => !assignedSources.has(artwork.src),
+  );
+
+  if (unassigned.length > 0) {
+    pages.push({ id: "additional-works", artworks: unassigned });
+  }
+
+  return pages;
 }
 
-function getEditorialScaleStyle(collections: EditorialCollection[]) {
-  const widthLimits = collections.flatMap((collection) => {
-    const physicalWidths = collection.artworks
+function getEditorialScaleStyle(pages: EditorialPage[]) {
+  const widthLimits = pages.map((page) => {
+    const physicalWidthTotal = page.artworks
       .filter(
         (artwork) => artwork.width !== null && artwork.height !== null,
       )
-      .map((artwork) => artwork.width ?? 0)
-      .sort((a, b) => b - a);
-    const contextCount = collection.artworks.length - physicalWidths.length;
-    const gapCount = Math.max(0, collection.artworks.length - 1);
+      .reduce((sum, artwork) => sum + (artwork.width ?? 0), 0);
+    const contextCount = page.artworks.filter(
+      (artwork) => artwork.width === null || artwork.height === null,
+    ).length;
+    const gapCount = Math.max(0, page.artworks.length - 1);
+    const subtractions = [
+      "var(--editorial-side-gutter)",
+      "var(--editorial-side-gutter)",
+      ...Array.from(
+        { length: gapCount },
+        () => "var(--editorial-painting-gap)",
+      ),
+      ...Array.from(
+        { length: contextCount },
+        () => "var(--editorial-context-width)",
+      ),
+    ];
 
-    return physicalWidths.map((_, activeIndex) => {
-      const activeWidths = physicalWidths.slice(0, activeIndex + 1);
-      const activeWidthTotal = activeWidths.reduce(
-        (sum, width) => sum + width,
-        0,
-      );
-      const fixedCaptionWidth =
-        (physicalWidths.length - activeWidths.length) *
-        EDITORIAL_MIN_FIGURE_WIDTH;
-      const subtractions = [
-        "var(--editorial-side-gutter)",
-        "var(--editorial-side-gutter)",
-        ...Array.from(
-          { length: gapCount },
-          () => "var(--editorial-painting-gap)",
-        ),
-        ...Array.from(
-          { length: contextCount },
-          () => "var(--editorial-context-width)",
-        ),
-        ...(fixedCaptionWidth > 0 ? [`${fixedCaptionWidth}px`] : []),
-      ];
-
-      return `calc((100vw - ${subtractions.join(" - ")}) / ${activeWidthTotal})`;
-    });
+    return physicalWidthTotal > 0
+      ? `calc((100vw - ${subtractions.join(" - ")}) / ${physicalWidthTotal})`
+      : "5px";
   });
   const tallestArtwork = Math.max(
     1,
-    ...collections.flatMap((collection) =>
-      collection.artworks.map((artwork) => artwork.height ?? 0),
+    ...pages.flatMap((page) =>
+      page.artworks.map((artwork) => artwork.height ?? 0),
     ),
   );
 
@@ -345,11 +391,11 @@ function GalleryArchitecture() {
 }
 
 function EditorialGallery({
-  collections,
+  pages,
   referenceObject,
   onOpenArtwork,
 }: {
-  collections: EditorialCollection[];
+  pages: EditorialPage[];
   referenceObject: GalleryReferenceObject | null;
   onOpenArtwork: (
     artwork: Artwork,
@@ -360,7 +406,7 @@ function EditorialGallery({
   return (
     <div
       className="editorial-gallery"
-      style={getEditorialScaleStyle(collections)}
+      style={getEditorialScaleStyle(pages)}
     >
       {referenceObject && (
         <div
@@ -377,16 +423,16 @@ function EditorialGallery({
       )}
 
       <div className="editorial-gallery__rooms">
-        {collections.map((collection, collectionIndex) => (
+        {pages.map((page, pageIndex) => (
           <section
             className="editorial-gallery__room"
-            key={collection.year}
-            aria-label={`${collection.year} artwork collection`}
-            data-artwork-count={collection.artworks.length}
-            data-collection-year={collection.year}
+            key={page.id}
+            aria-label={`Gallery page ${pageIndex + 1} of ${pages.length}`}
+            data-artwork-count={page.artworks.length}
+            data-gallery-page={pageIndex + 1}
           >
             <div className="editorial-gallery__paintings">
-              {collection.artworks.map((artwork, artworkIndex) => {
+              {page.artworks.map((artwork, artworkIndex) => {
                 const imageSize = EDITORIAL_IMAGE_SIZES[artwork.src];
                 const desktopPreviewSrc =
                   EDITORIAL_PREVIEWS[artwork.src] ??
@@ -453,12 +499,12 @@ function EditorialGallery({
                           height={imageSize.height}
                           alt=""
                           loading={
-                            collectionIndex === 0 && artworkIndex === 0
+                            pageIndex === 0 && artworkIndex === 0
                               ? "eager"
                               : "lazy"
                           }
                           fetchPriority={
-                            collectionIndex === 0 && artworkIndex === 0
+                            pageIndex === 0 && artworkIndex === 0
                               ? "high"
                               : "auto"
                           }
@@ -485,50 +531,63 @@ function FocusedArtworkImage({
   artwork: Artwork;
   previewSrc: string;
 }) {
-  const [displaySrc, setDisplaySrc] = useState(previewSrc);
+  const imageSize = EDITORIAL_IMAGE_SIZES[artwork.src];
+  const hasSeparateFullResolution = previewSrc !== artwork.src;
+  const [isFullResolutionReady, setIsFullResolutionReady] = useState(
+    !hasSeparateFullResolution,
+  );
 
   useEffect(() => {
-    setDisplaySrc(previewSrc);
-    if (previewSrc === artwork.src) return;
-
-    let cancelled = false;
-    const fullResolutionImage = new Image();
-    fullResolutionImage.decoding = "async";
-    fullResolutionImage.src = artwork.src;
-
-    void fullResolutionImage.decode().then(
-      () => {
-        if (!cancelled) setDisplaySrc(artwork.src);
-      },
-      () => {
-        if (
-          !cancelled &&
-          fullResolutionImage.complete &&
-          fullResolutionImage.naturalWidth > 0
-        ) {
-          setDisplaySrc(artwork.src);
-        }
-      },
-    );
-
-    return () => {
-      cancelled = true;
-    };
-  }, [artwork.src, previewSrc]);
+    setIsFullResolutionReady(!hasSeparateFullResolution);
+  }, [artwork.src, hasSeparateFullResolution, previewSrc]);
 
   return (
-    <img
-      src={displaySrc}
-      alt={`${artwork.title} by Hannah Gao`}
-      decoding="async"
-    />
+    <div
+      className={`focused-artwork-image${
+        isFullResolutionReady ? " focused-artwork-image--ready" : ""
+      }`}
+      role="img"
+      aria-label={`${artwork.title} by Hannah Gao`}
+    >
+      <img
+        className="focused-artwork-image__preview"
+        src={previewSrc}
+        width={imageSize?.width}
+        height={imageSize?.height}
+        alt=""
+        decoding="async"
+      />
+      {hasSeparateFullResolution && (
+        <img
+          className="focused-artwork-image__full"
+          src={artwork.src}
+          width={imageSize?.width}
+          height={imageSize?.height}
+          alt=""
+          decoding="async"
+          onLoad={(event) => {
+            const fullResolutionImage = event.currentTarget;
+            const revealFullResolution = () => {
+              window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(() => {
+                  setIsFullResolutionReady(true);
+                });
+              });
+            };
+            void fullResolutionImage
+              .decode()
+              .then(revealFullResolution, revealFullResolution);
+          }}
+        />
+      )}
+    </div>
   );
 }
 
 export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   const rooms = useMemo(() => makeScaleRooms(artworks), [artworks]);
-  const editorialCollections = useMemo(
-    () => makeEditorialCollections(artworks),
+  const editorialPages = useMemo(
+    () => makeEditorialPages(artworks),
     [artworks],
   );
   const galleryRef = useRef<HTMLElement>(null);
@@ -537,6 +596,9 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   const scaleModeRef = useRef(false);
   const wheelLockRef = useRef(false);
   const wheelResetRef = useRef<number | null>(null);
+  const editorialSettleFrameRef = useRef<number | null>(null);
+  const editorialSettleTimerRef = useRef<number | null>(null);
+  const isEditorialSettlingRef = useRef(false);
   const focusedCloseRef = useRef<HTMLButtonElement>(null);
   const focusedTriggerRef = useRef<HTMLButtonElement | null>(null);
   const focusedCloseTimerRef = useRef<number | null>(null);
@@ -581,7 +643,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     }
 
     setIsFocusClosing(true);
-    focusedCloseTimerRef.current = window.setTimeout(finish, 240);
+    focusedCloseTimerRef.current = window.setTimeout(finish, 360);
   }, [isFocusClosing]);
 
   const setRoom = useCallback(
@@ -715,6 +777,128 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     gallery.addEventListener("wheel", handleWheel, { passive: false });
     return () => gallery.removeEventListener("wheel", handleWheel);
   }, [isScaleMode, roomIndex, setRoom]);
+
+  useEffect(() => {
+    if (isScaleMode || focusedArtwork) return;
+
+    const widthMedia = window.matchMedia(
+      `(min-width: ${MIN_LAPTOP_WIDTH}px)`,
+    );
+    const motionMedia = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+    const cancelEditorialSettle = () => {
+      if (editorialSettleFrameRef.current !== null) {
+        window.cancelAnimationFrame(editorialSettleFrameRef.current);
+        editorialSettleFrameRef.current = null;
+      }
+      if (editorialSettleTimerRef.current !== null) {
+        window.clearTimeout(editorialSettleTimerRef.current);
+        editorialSettleTimerRef.current = null;
+      }
+      isEditorialSettlingRef.current = false;
+    };
+    const settleToNearestPage = () => {
+      if (
+        !widthMedia.matches ||
+        motionMedia.matches ||
+        isEditorialSettlingRef.current
+      ) {
+        return;
+      }
+
+      const gallery = galleryRef.current;
+      if (!gallery) return;
+      const currentScrollY = window.scrollY;
+      const pageTops = [
+        ...gallery.querySelectorAll<HTMLElement>(
+          ".editorial-gallery__room",
+        ),
+      ].map(
+        (page) => page.getBoundingClientRect().top + currentScrollY,
+      );
+      if (pageTops.length === 0) return;
+
+      const nearestPageTop = pageTops.reduce((nearest, pageTop) =>
+        Math.abs(pageTop - currentScrollY) <
+        Math.abs(nearest - currentScrollY)
+          ? pageTop
+          : nearest,
+      );
+      const distance = nearestPageTop - currentScrollY;
+      const settleThreshold = Math.min(96, window.innerHeight * 0.12);
+      if (Math.abs(distance) < 1 || Math.abs(distance) > settleThreshold) {
+        return;
+      }
+
+      const duration = 420 + (Math.abs(distance) / settleThreshold) * 140;
+      let startedAt: number | null = null;
+      isEditorialSettlingRef.current = true;
+
+      const animate = (timestamp: number) => {
+        startedAt ??= timestamp;
+        const progress = Math.min(1, (timestamp - startedAt) / duration);
+        const eased =
+          progress ** 3 * (progress * (progress * 6 - 15) + 10);
+        window.scrollTo(0, currentScrollY + distance * eased);
+
+        if (progress < 1) {
+          editorialSettleFrameRef.current = window.requestAnimationFrame(
+            animate,
+          );
+        } else {
+          editorialSettleFrameRef.current = null;
+          isEditorialSettlingRef.current = false;
+        }
+      };
+
+      editorialSettleFrameRef.current = window.requestAnimationFrame(animate);
+    };
+    const scheduleSettleFallback = () => {
+      if (isEditorialSettlingRef.current) return;
+      if (editorialSettleTimerRef.current !== null) {
+        window.clearTimeout(editorialSettleTimerRef.current);
+      }
+      editorialSettleTimerRef.current = window.setTimeout(() => {
+        editorialSettleTimerRef.current = null;
+        settleToNearestPage();
+      }, 160);
+    };
+    const supportsScrollEnd = "onscrollend" in window;
+
+    if (supportsScrollEnd) {
+      window.addEventListener("scrollend", settleToNearestPage);
+    } else {
+      window.addEventListener("scroll", scheduleSettleFallback, {
+        passive: true,
+      });
+    }
+    window.addEventListener("wheel", cancelEditorialSettle, { passive: true });
+    window.addEventListener("touchstart", cancelEditorialSettle, {
+      passive: true,
+    });
+    window.addEventListener("pointerdown", cancelEditorialSettle, {
+      passive: true,
+    });
+    window.addEventListener("keydown", cancelEditorialSettle);
+    widthMedia.addEventListener("change", cancelEditorialSettle);
+    motionMedia.addEventListener("change", cancelEditorialSettle);
+
+    return () => {
+      cancelEditorialSettle();
+      if (supportsScrollEnd) {
+        window.removeEventListener("scrollend", settleToNearestPage);
+      } else {
+        window.removeEventListener("scroll", scheduleSettleFallback);
+      }
+      window.removeEventListener("wheel", cancelEditorialSettle);
+      window.removeEventListener("touchstart", cancelEditorialSettle);
+      window.removeEventListener("pointerdown", cancelEditorialSettle);
+      window.removeEventListener("keydown", cancelEditorialSettle);
+      widthMedia.removeEventListener("change", cancelEditorialSettle);
+      motionMedia.removeEventListener("change", cancelEditorialSettle);
+    };
+  }, [editorialPages.length, focusedArtwork, isScaleMode]);
 
   useEffect(
     () => () => {
@@ -864,7 +1048,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
           </div>
         ) : (
           <EditorialGallery
-            collections={editorialCollections}
+            pages={editorialPages}
             referenceObject={STUDIO_STOOL}
             onOpenArtwork={openFocusedArtwork}
           />
@@ -972,6 +1156,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
 
           <figure className="focused-artwork">
             <FocusedArtworkImage
+              key={focusedArtwork.src}
               artwork={focusedArtwork}
               previewSrc={focusedPreviewSrc}
             />
