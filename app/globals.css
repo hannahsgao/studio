@@ -490,10 +490,10 @@ body {
     inset: 0;
     background:
       radial-gradient(
-        ellipse 84% 73% at 11% 8%,
-        rgb(255 254 249 / 88%) 0%,
-        rgb(255 254 249 / 32%) 43%,
-        transparent 72%
+        ellipse 72% 64% at 7% 5%,
+        rgb(255 253 243 / 48%) 0%,
+        rgb(255 253 243 / 16%) 45%,
+        transparent 74%
       ),
       linear-gradient(
         180deg,
@@ -515,27 +515,18 @@ body {
 
   .gallery-architecture__light {
     position: absolute;
-    top: clamp(-96px, -7svh, -48px);
-    left: clamp(-96px, -5vw, -28px);
-    width: min(50vw, 820px);
-    height: min(58svh, 600px);
-    background: radial-gradient(
-      ellipse 82% 74% at 24% 20%,
-      rgb(255 255 246 / 42%) 0%,
-      rgb(255 255 246 / 15%) 46%,
-      transparent 74%
-    );
+    top: clamp(-92px, -6svh, -46px);
+    left: clamp(-78px, -4vw, -32px);
+    width: min(52vw, 780px);
+    height: min(60svh, 580px);
   }
 
   .gallery-architecture__light::after {
     position: absolute;
     inset: 0;
-    background: url("/gallery/windowlight-soft.webp") no-repeat top left /
-      contain;
+    background: url("/gallery/windowlight.webp") no-repeat top left / contain;
     content: "";
     opacity: 0.2;
-    transform: scale(1.04);
-    transform-origin: top left;
   }
 
   .gallery-architecture__floor {
