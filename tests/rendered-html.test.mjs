@@ -236,7 +236,6 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     "/artwork/editorial/cozy-640.webp",
   ];
   const environmentSources = [
-    "/gallery/windowlight.webp",
     "/gallery/plaster-grain.webp",
     "/gallery/floor-grain.webp",
   ];
@@ -265,7 +264,7 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     }, 0);
 
   assert.equal(byteTotal(editorialSources), 413_388);
-  assert.equal(byteTotal(environmentSources), 32_946);
+  assert.equal(byteTotal(environmentSources), 4_216);
 
   for (const [src, expected] of Object.entries(editorialHashes)) {
     const bytes = readFileSync(new URL(`../public${src}`, import.meta.url));
@@ -285,7 +284,9 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     "utf8",
   );
 
-  assert.match(galleryStyles, /url\("\/gallery\/windowlight\.webp"\)/);
+  assert.doesNotMatch(galleryStyles, /windowlight\.webp/);
+  assert.match(galleryStyles, /\.gallery-architecture__light::before/);
+  assert.match(galleryStyles, /ellipse 76% 68% at 14% 10%/);
   assert.match(galleryStyles, /\.editorial-gallery__grid\s*{/);
   assert.match(galleryStyles, /grid-template-columns: repeat\(3,/);
   assert.match(galleryStyles, /@keyframes gallery-grid-item-in/);
