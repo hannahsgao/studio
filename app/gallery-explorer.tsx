@@ -17,6 +17,73 @@ const TARGET_WORKS_PER_WALL = 7;
 const ARTWORK_GAP_INCHES = 14;
 const MAX_PIXELS_PER_INCH = 5;
 const MIN_LAPTOP_WIDTH = 900;
+const EDITORIAL_WORKS_PER_ROOM = 4;
+
+const FEATURED_EDITORIAL_SOURCES = [
+  "/artwork/rising.jpg",
+  "/artwork/heritage.jpg",
+  "/artwork/bastion.jpg",
+  "/artwork/cozy.jpg",
+] as const;
+
+const EDITORIAL_PREVIEWS: Record<
+  (typeof FEATURED_EDITORIAL_SOURCES)[number],
+  { src: string; width: number; height: number }
+> = {
+  "/artwork/rising.jpg": {
+    src: "/artwork/editorial/rising-640.webp",
+    width: 640,
+    height: 1246,
+  },
+  "/artwork/heritage.jpg": {
+    src: "/artwork/editorial/heritage-520.webp",
+    width: 520,
+    height: 682,
+  },
+  "/artwork/bastion.jpg": {
+    src: "/artwork/editorial/bastion-480.webp",
+    width: 480,
+    height: 611,
+  },
+  "/artwork/cozy.jpg": {
+    src: "/artwork/editorial/cozy-640.webp",
+    width: 640,
+    height: 466,
+  },
+};
+
+const EDITORIAL_IMAGE_SIZES: Record<
+  string,
+  { width: number; height: number }
+> = {
+  "/artwork/DONTLOOK-sketch.jpg": { width: 1500, height: 2000 },
+  "/artwork/DONTLOOKATME.jpg": { width: 1399, height: 2000 },
+  "/artwork/anubis-dream.jpg": { width: 1589, height: 2000 },
+  "/artwork/bastion.jpg": { width: 1572, height: 2000 },
+  "/artwork/blame.jpg": { width: 2000, height: 1999 },
+  "/artwork/boots.jpg": { width: 1521, height: 2000 },
+  "/artwork/cows.jpg": { width: 2000, height: 1988 },
+  "/artwork/cozy.jpg": { width: 2000, height: 1457 },
+  "/artwork/fresh-closeup.jpg": { width: 1500, height: 2000 },
+  "/artwork/fresh.jpg": { width: 1321, height: 2000 },
+  "/artwork/gotcha.jpg": { width: 2000, height: 1500 },
+  "/artwork/handsoff.jpg": { width: 2000, height: 1984 },
+  "/artwork/heritage.jpg": { width: 1526, height: 2000 },
+  "/artwork/inside-out.jpg": { width: 2000, height: 1977 },
+  "/artwork/mirror:rorrim.jpg": { width: 2000, height: 1933 },
+  "/artwork/oasis.jpg": { width: 1500, height: 2000 },
+  "/artwork/pick.jpg": { width: 1506, height: 2000 },
+  "/artwork/reflection.jpg": { width: 1996, height: 2000 },
+  "/artwork/rising.jpg": { width: 1027, height: 2000 },
+  "/artwork/roar.jpg": { width: 1612, height: 2000 },
+  "/artwork/still-life-egg.jpg": { width: 1500, height: 2000 },
+  "/artwork/still-life.jpg": { width: 2000, height: 1416 },
+  "/artwork/studio-pic-stanford.jpg": { width: 1500, height: 2000 },
+  "/artwork/the-walls-we-build.jpg": { width: 1970, height: 2000 },
+  "/artwork/tiedup.jpg": { width: 990, height: 2000 },
+  "/artwork/unravel.jpg": { width: 1341, height: 2000 },
+  "/artwork/wash.jpg": { width: 1984, height: 2000 },
+};
 
 type GalleryExplorerProps = {
   artworks: Artwork[];
@@ -32,6 +99,26 @@ type ScaleRoom = {
 type RoomPartition = {
   cost: number;
   sizes: number[];
+};
+
+type GalleryReferenceObject = {
+  id: string;
+  nominalWidthInches: number;
+  nominalHeightInches: number;
+  editorialImage1x: string;
+  editorialImage2x: string;
+  calibratedImage1x: string;
+  calibratedImage2x: string;
+};
+
+const STUDIO_STOOL: GalleryReferenceObject = {
+  id: "stanford-studio-stool",
+  nominalWidthInches: 16,
+  nominalHeightInches: 27,
+  editorialImage1x: "/gallery/studio-stool@1x.webp",
+  editorialImage2x: "/gallery/studio-stool@2x.webp",
+  calibratedImage1x: "/gallery/studio-stool-scale@1x.webp",
+  calibratedImage2x: "/gallery/studio-stool-scale@2x.webp",
 };
 
 function artworkSpan(artworks: Artwork[]) {
@@ -185,6 +272,128 @@ function artworkLabel(artwork: Artwork) {
   ]
     .filter(Boolean)
     .join(", ");
+}
+
+function makeEditorialRooms(artworks: Artwork[]) {
+  const artworksBySource = new Map(
+    artworks.map((artwork) => [artwork.src, artwork]),
+  );
+  const featured = FEATURED_EDITORIAL_SOURCES.flatMap((source) => {
+    const artwork = artworksBySource.get(source);
+    return artwork ? [artwork] : [];
+  });
+  const featuredSources = new Set(featured.map((artwork) => artwork.src));
+  const ordered = [
+    ...featured,
+    ...artworks.filter((artwork) => !featuredSources.has(artwork.src)),
+  ];
+
+  if (
+    ordered.length !== artworks.length ||
+    new Set(ordered.map((artwork) => artwork.src)).size !== artworks.length
+  ) {
+    throw new Error("Editorial gallery requires unique artwork sources.");
+  }
+
+  return Array.from(
+    { length: Math.ceil(ordered.length / EDITORIAL_WORKS_PER_ROOM) },
+    (_, roomIndex) =>
+      ordered.slice(
+        roomIndex * EDITORIAL_WORKS_PER_ROOM,
+        (roomIndex + 1) * EDITORIAL_WORKS_PER_ROOM,
+      ),
+  );
+}
+
+function GalleryArchitecture() {
+  return (
+    <div className="gallery-architecture" aria-hidden="true">
+      <div className="gallery-architecture__wall" />
+      <div className="gallery-architecture__light" />
+      <div className="gallery-architecture__floor" />
+    </div>
+  );
+}
+
+function EditorialGallery({
+  artworks,
+  referenceObject,
+}: {
+  artworks: Artwork[];
+  referenceObject: GalleryReferenceObject | null;
+}) {
+  const rooms = makeEditorialRooms(artworks);
+
+  return (
+    <div className="editorial-gallery">
+      {referenceObject && (
+        <div
+          className="editorial-gallery__reference"
+          aria-hidden="true"
+          style={
+            {
+              aspectRatio: `${referenceObject.nominalWidthInches} / ${referenceObject.nominalHeightInches}`,
+              "--reference-image-1x": `url("${referenceObject.editorialImage1x}")`,
+              "--reference-image-2x": `url("${referenceObject.editorialImage2x}")`,
+            } as CSSProperties
+          }
+        />
+      )}
+
+      <div className="editorial-gallery__rooms">
+        {rooms.map((room, roomIndex) => (
+          <section
+            className="editorial-gallery__room"
+            key={`editorial-room-${roomIndex + 1}`}
+            aria-label={`Editorial gallery room ${roomIndex + 1} of ${rooms.length}`}
+            data-artwork-count={room.length}
+          >
+            <div className="editorial-gallery__paintings">
+              {room.map((artwork, artworkIndex) => {
+                const preview =
+                  EDITORIAL_PREVIEWS[
+                    artwork.src as keyof typeof EDITORIAL_PREVIEWS
+                  ];
+                const imageSize =
+                  preview ?? EDITORIAL_IMAGE_SIZES[artwork.src];
+
+                if (!imageSize) {
+                  throw new Error(
+                    `Editorial gallery is missing image dimensions for ${artwork.src}.`,
+                  );
+                }
+
+                return (
+                  <figure
+                    className="artwork editorial-gallery__artwork"
+                    key={artwork.src}
+                  >
+                    <img
+                      src={preview?.src ?? artwork.src}
+                      width={imageSize.width}
+                      height={imageSize.height}
+                      alt={`${artwork.title} by Hannah Gao`}
+                      loading={roomIndex === 0 ? "eager" : "lazy"}
+                      fetchPriority={
+                        roomIndex === 0 && artworkIndex === 0 ? "high" : "auto"
+                      }
+                      decoding="async"
+                      style={
+                        artwork.displayScale
+                          ? { width: `${artwork.displayScale * 100}%` }
+                          : undefined
+                      }
+                    />
+                    <ArtworkCaption artwork={artwork} />
+                  </figure>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function FocusedArtworkImage({ artwork }: { artwork: Artwork }) {
@@ -475,13 +684,17 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
       <main
         id="gallery"
         ref={galleryRef}
-        className={`gallery${isScaleMode ? " gallery--scale" : ""}`}
+        className={`gallery${
+          isScaleMode ? " gallery--scale" : " gallery--editorial"
+        }`}
         tabIndex={-1}
         inert={focusedArtwork !== null}
         aria-hidden={focusedArtwork ? true : undefined}
         aria-label={isScaleMode ? "Artworks shown at relative scale" : undefined}
         onKeyDown={handleKeyDown}
       >
+        <GalleryArchitecture />
+
         {isScaleMode ? (
           <div
             className="scale-gallery-track"
@@ -532,23 +745,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
             ))}
           </div>
         ) : (
-          artworks.map((artwork, index) => (
-            <figure className="artwork" key={artwork.src}>
-              <img
-                src={artwork.src}
-                alt={`${artwork.title} by Hannah Gao`}
-                loading={index < 2 ? "eager" : "lazy"}
-                fetchPriority={index === 0 ? "high" : "auto"}
-                decoding="async"
-                style={
-                  artwork.displayScale
-                    ? { width: `${artwork.displayScale * 100}%` }
-                    : undefined
-                }
-              />
-              <ArtworkCaption artwork={artwork} />
-            </figure>
-          ))
+          <EditorialGallery artworks={artworks} referenceObject={STUDIO_STOOL} />
         )}
 
         {isScaleMode && (
