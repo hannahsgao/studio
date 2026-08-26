@@ -22,54 +22,55 @@ const EDITORIAL_PAGES = [
     id: "studio-and-dontlook",
     sources: [
       "/artwork/studio-pic-stanford.jpg",
-      "/artwork/DONTLOOK-sketch.jpg",
       "/artwork/DONTLOOKATME.jpg",
+      "/artwork/DONTLOOK-sketch.jpg",
     ],
   },
   {
-    id: "rising-and-2023",
+    id: "unravel-through-fresh",
     sources: [
-      "/artwork/rising.jpg",
       "/artwork/unravel.jpg",
       "/artwork/blame.jpg",
       "/artwork/handsoff.jpg",
-      "/artwork/anubis-dream.jpg",
-      "/artwork/roar.jpg",
-    ],
-  },
-  {
-    id: "heritage-and-tied-up",
-    sources: [
+      "/artwork/rising.jpg",
       "/artwork/heritage.jpg",
-      "/artwork/bastion.jpg",
       "/artwork/fresh.jpg",
-      "/artwork/tiedup.jpg",
     ],
   },
   {
-    id: "works-on-paper-and-reflection",
+    id: "bastion-through-wash",
     sources: [
+      "/artwork/bastion.jpg",
+      "/artwork/anubis-dream.jpg",
+      "/artwork/the-walls-we-build.jpg",
       "/artwork/wash.jpg",
+    ],
+  },
+  {
+    id: "mirror-through-oasis",
+    sources: [
       "/artwork/mirror:rorrim.jpg",
       "/artwork/inside-out.jpg",
-      "/artwork/oasis.jpg",
-      "/artwork/the-walls-we-build.jpg",
       "/artwork/reflection.jpg",
+      "/artwork/oasis.jpg",
     ],
   },
   {
     id: "small-works-and-still-lifes",
     sources: [
+      "/artwork/roar.jpg",
       "/artwork/cozy.jpg",
       "/artwork/boots.jpg",
+      "/artwork/cows.jpg",
       "/artwork/pick.jpg",
       "/artwork/gotcha.jpg",
-      "/artwork/cows.jpg",
       "/artwork/still-life-egg.jpg",
       "/artwork/still-life.jpg",
     ],
   },
 ] as const;
+
+const EDITORIAL_OMITTED_SOURCES = new Set(["/artwork/tiedup.jpg"]);
 
 const EDITORIAL_PREVIEWS: Record<string, string> = {
   "/artwork/studio-pic-stanford.jpg":
@@ -329,7 +330,9 @@ function makeEditorialPages(artworks: Artwork[]) {
     }),
   })).filter((page) => page.artworks.length > 0);
   const unassigned = artworks.filter(
-    (artwork) => !assignedSources.has(artwork.src),
+    (artwork) =>
+      !assignedSources.has(artwork.src) &&
+      !EDITORIAL_OMITTED_SOURCES.has(artwork.src),
   );
 
   if (unassigned.length > 0) {

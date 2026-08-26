@@ -45,61 +45,59 @@ test("server-renders the artwork", async () => {
     ),
   ].map((match) => match[1]);
 
-  assert.equal(imageSources.length, 26);
+  assert.equal(imageSources.length, 25);
   assert.equal(new Set(imageSources).size, imageSources.length);
   assert.deepEqual(imageSources, [
     "/artwork/studio-pic-stanford.jpg",
-    "/artwork/DONTLOOK-sketch.jpg",
     "/artwork/DONTLOOKATME.jpg",
-    "/artwork/rising.jpg",
+    "/artwork/DONTLOOK-sketch.jpg",
     "/artwork/unravel.jpg",
     "/artwork/blame.jpg",
     "/artwork/handsoff.jpg",
-    "/artwork/anubis-dream.jpg",
-    "/artwork/roar.jpg",
+    "/artwork/rising.jpg",
     "/artwork/heritage.jpg",
-    "/artwork/bastion.jpg",
     "/artwork/fresh.jpg",
-    "/artwork/tiedup.jpg",
+    "/artwork/bastion.jpg",
+    "/artwork/anubis-dream.jpg",
+    "/artwork/the-walls-we-build.jpg",
     "/artwork/wash.jpg",
     "/artwork/mirror:rorrim.jpg",
     "/artwork/inside-out.jpg",
-    "/artwork/oasis.jpg",
-    "/artwork/the-walls-we-build.jpg",
     "/artwork/reflection.jpg",
+    "/artwork/oasis.jpg",
+    "/artwork/roar.jpg",
     "/artwork/cozy.jpg",
     "/artwork/boots.jpg",
+    "/artwork/cows.jpg",
     "/artwork/pick.jpg",
     "/artwork/gotcha.jpg",
-    "/artwork/cows.jpg",
     "/artwork/still-life-egg.jpg",
     "/artwork/still-life.jpg",
   ]);
   assert.deepEqual(desktopPreviewSources, [
     "/artwork/editorial/studio-pic-stanford-480.webp",
-    "/artwork/editorial/DONTLOOK-sketch-320.webp",
     "/artwork/editorial/DONTLOOKATME-480.webp",
-    "/artwork/editorial/rising-640.webp",
+    "/artwork/editorial/DONTLOOK-sketch-320.webp",
     "/artwork/scale/unravel.webp",
     "/artwork/scale/blame.webp",
     "/artwork/scale/handsoff.webp",
-    "/artwork/scale/anubis-dream.webp",
-    "/artwork/scale/roar.webp",
+    "/artwork/editorial/rising-640.webp",
     "/artwork/editorial/heritage-520.webp",
-    "/artwork/editorial/bastion-480.webp",
     "/artwork/scale/fresh.webp",
-    "/artwork/scale/tiedup.webp",
+    "/artwork/editorial/bastion-480.webp",
+    "/artwork/scale/anubis-dream.webp",
+    "/artwork/scale/the-walls-we-build.webp",
     "/artwork/scale/wash.webp",
     "/artwork/scale/mirror:rorrim.webp",
     "/artwork/scale/inside-out.webp",
-    "/artwork/scale/oasis.webp",
-    "/artwork/scale/the-walls-we-build.webp",
     "/artwork/scale/reflection.webp",
+    "/artwork/scale/oasis.webp",
+    "/artwork/scale/roar.webp",
     "/artwork/editorial/cozy-640.webp",
     "/artwork/scale/boots.webp",
+    "/artwork/scale/cows.webp",
     "/artwork/scale/pick.webp",
     "/artwork/scale/gotcha.webp",
-    "/artwork/scale/cows.webp",
     "/artwork/scale/still-life-egg.webp",
     "/artwork/scale/still-life.webp",
   ]);
@@ -115,7 +113,7 @@ test("server-renders the artwork", async () => {
     [...html.matchAll(/data-artwork-count="(\d+)"/g)].map((match) =>
       Number.parseInt(match[1], 10),
     ),
-    [3, 6, 4, 6, 7],
+    [3, 6, 4, 4, 8],
   );
   assert.deepEqual(
     [...html.matchAll(/data-gallery-page="(\d+)"/g)].map(
@@ -131,7 +129,7 @@ test("server-renders the artwork", async () => {
     html.match(/aria-haspopup="dialog"/g)?.length,
     imageSources.length,
   );
-  assert.equal(html.match(/data-physical-scale="true"/g)?.length, 25);
+  assert.equal(html.match(/data-physical-scale="true"/g)?.length, 24);
   assert.equal(html.match(/data-physical-scale="unavailable"/g)?.length, 1);
 
   for (const [tag] of imageTags) {
@@ -144,7 +142,7 @@ test("server-renders the artwork", async () => {
   );
   assert.equal(
     imageTags.filter(([tag]) => tag.includes('loading="lazy"')).length,
-    25,
+    24,
   );
   assert.equal(
     imageTags.filter(([tag]) => tag.includes('fetchPriority="high"')).length,
