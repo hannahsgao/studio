@@ -558,16 +558,16 @@ body {
     height: min(84svh, 760px);
     background:
       radial-gradient(
-        ellipse 76% 68% at 16% 18%,
-        rgb(255 246 215 / 50%) 0 20%,
-        rgb(255 232 177 / 25%) 44%,
-        rgb(255 242 207 / 9%) 66%,
+        ellipse 76% 68% at 14% 10%,
+        rgb(255 251 232 / 34%) 0 18%,
+        rgb(255 246 214 / 15%) 44%,
+        rgb(255 249 230 / 5%) 64%,
         transparent 82%
       ),
       radial-gradient(
         ellipse 54% 44% at 40% 38%,
-        rgb(255 219 149 / 13%),
-        transparent 74%
+        rgb(255 236 189 / 7%),
+        transparent 76%
       );
     transform: rotate(-3deg);
     transform-origin: 0 0;
@@ -585,26 +585,26 @@ body {
     background:
       radial-gradient(
         ellipse 52% 5% at 6% 22%,
-        rgb(78 67 52 / 15%) 0 16%,
-        rgb(78 67 52 / 7%) 44%,
-        transparent 72%
+        rgb(78 67 52 / 8.2%) 0 16%,
+        rgb(78 67 52 / 4.2%) 44%,
+        transparent 78%
       ),
       radial-gradient(
         ellipse 34% 4% at 18% 34%,
-        rgb(78 67 52 / 13%) 0 14%,
-        rgb(78 67 52 / 6%) 46%,
-        transparent 74%
+        rgb(78 67 52 / 7.2%) 0 14%,
+        rgb(78 67 52 / 3.6%) 46%,
+        transparent 80%
       ),
       radial-gradient(
         ellipse 25% 3.5% at 31% 44%,
-        rgb(78 67 52 / 11%) 0 12%,
-        rgb(78 67 52 / 5%) 48%,
-        transparent 76%
+        rgb(78 67 52 / 6%) 0 12%,
+        rgb(78 67 52 / 3%) 48%,
+        transparent 82%
       ),
       radial-gradient(
         ellipse 16% 3% at 43% 52%,
-        rgb(78 67 52 / 8%) 0 10%,
-        transparent 78%
+        rgb(78 67 52 / 4.2%) 0 10%,
+        transparent 80%
       );
     transform: rotate(19deg) skewX(-8deg);
     transform-origin: 8% 24%;
@@ -614,63 +614,63 @@ body {
     background:
       radial-gradient(
         ellipse 10% 7% at 10% 24%,
-        rgb(78 67 52 / 19%) 0 16%,
-        rgb(78 67 52 / 8%) 48%,
-        transparent 72%
+        rgb(78 67 52 / 11.5%) 0 16%,
+        rgb(78 67 52 / 5.2%) 48%,
+        transparent 78%
       ),
       radial-gradient(
         ellipse 7% 10% at 20% 28%,
-        rgb(78 67 52 / 18%) 0 14%,
-        rgb(78 67 52 / 7.5%) 48%,
-        transparent 74%
+        rgb(78 67 52 / 10.5%) 0 14%,
+        rgb(78 67 52 / 4.7%) 48%,
+        transparent 80%
       ),
       radial-gradient(
         ellipse 14% 8% at 30% 21%,
-        rgb(78 67 52 / 16.5%) 0 14%,
-        rgb(78 67 52 / 7%) 50%,
-        transparent 76%
-      ),
-      radial-gradient(
-        ellipse 9% 13% at 39% 34%,
-        rgb(78 67 52 / 15%) 0 12%,
-        rgb(78 67 52 / 6%) 52%,
-        transparent 78%
-      ),
-      radial-gradient(
-        ellipse 18% 10% at 18% 45%,
-        rgb(78 67 52 / 14%) 0 12%,
-        rgb(78 67 52 / 5.5%) 52%,
-        transparent 78%
-      ),
-      radial-gradient(
-        ellipse 13% 18% at 33% 51%,
-        rgb(78 67 52 / 12.5%) 0 10%,
-        rgb(78 67 52 / 4.8%) 54%,
-        transparent 80%
-      ),
-      radial-gradient(
-        ellipse 22% 13% at 50% 46%,
-        rgb(78 67 52 / 11%) 0 10%,
-        rgb(78 67 52 / 4%) 54%,
-        transparent 80%
-      ),
-      radial-gradient(
-        ellipse 16% 21% at 61% 60%,
-        rgb(78 67 52 / 9.5%) 0 8%,
-        rgb(78 67 52 / 3.4%) 56%,
+        rgb(78 67 52 / 9.6%) 0 14%,
+        rgb(78 67 52 / 4.2%) 50%,
         transparent 82%
       ),
       radial-gradient(
-        ellipse 27% 17% at 35% 68%,
-        rgb(78 67 52 / 8%) 0 8%,
-        rgb(78 67 52 / 2.8%) 58%,
+        ellipse 9% 13% at 39% 34%,
+        rgb(78 67 52 / 8.5%) 0 12%,
+        rgb(78 67 52 / 3.5%) 52%,
         transparent 84%
       ),
       radial-gradient(
-        ellipse 20% 26% at 66% 72%,
-        rgb(78 67 52 / 7%) 0 6%,
-        rgb(78 67 52 / 2.4%) 60%,
+        ellipse 18% 10% at 18% 45%,
+        rgb(78 67 52 / 8%) 0 12%,
+        rgb(78 67 52 / 3.2%) 52%,
+        transparent 84%
+      ),
+      radial-gradient(
+        ellipse 13% 18% at 33% 51%,
+        rgb(78 67 52 / 7%) 0 10%,
+        rgb(78 67 52 / 2.8%) 54%,
         transparent 86%
+      ),
+      radial-gradient(
+        ellipse 22% 13% at 50% 46%,
+        rgb(78 67 52 / 6.2%) 0 10%,
+        rgb(78 67 52 / 2.4%) 54%,
+        transparent 86%
+      ),
+      radial-gradient(
+        ellipse 16% 21% at 61% 60%,
+        rgb(78 67 52 / 5.4%) 0 8%,
+        rgb(78 67 52 / 2%) 56%,
+        transparent 88%
+      ),
+      radial-gradient(
+        ellipse 27% 17% at 35% 68%,
+        rgb(78 67 52 / 4.8%) 0 8%,
+        rgb(78 67 52 / 1.7%) 58%,
+        transparent 90%
+      ),
+      radial-gradient(
+        ellipse 20% 26% at 66% 72%,
+        rgb(78 67 52 / 4.2%) 0 6%,
+        rgb(78 67 52 / 1.4%) 60%,
+        transparent 92%
       );
     transform: skewX(-7deg) rotate(4deg);
     transform-origin: 12% 18%;

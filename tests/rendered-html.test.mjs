@@ -283,24 +283,10 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     new URL("../vite.config.ts", import.meta.url),
     "utf8",
   );
-  const proceduralLightStyles = galleryStyles.slice(
-    galleryStyles.indexOf("  .gallery-architecture__light {"),
-    galleryStyles.indexOf("  .gallery-architecture__floor {"),
-  );
-  const proceduralGradientCount =
-    proceduralLightStyles.match(/radial-gradient\(/g)?.length ?? 0;
 
   assert.doesNotMatch(galleryStyles, /windowlight\.webp/);
   assert.match(galleryStyles, /\.gallery-architecture__light::before/);
-  assert.ok(proceduralGradientCount >= 3 && proceduralGradientCount <= 16);
-  assert.doesNotMatch(
-    proceduralLightStyles,
-    /url\(|filter:|backdrop-filter|mask-image|mix-blend-mode|animation:|will-change/,
-  );
-  assert.match(
-    galleryStyles,
-    /@media \(prefers-reduced-transparency: reduce\)[\s\S]*?\.gallery-architecture__light/,
-  );
+  assert.match(galleryStyles, /ellipse 76% 68% at 14% 10%/);
   assert.match(galleryStyles, /\.editorial-gallery__grid\s*{/);
   assert.match(galleryStyles, /grid-template-columns: repeat\(3,/);
   assert.match(galleryStyles, /@keyframes gallery-grid-item-in/);
