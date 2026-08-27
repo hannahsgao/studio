@@ -237,7 +237,6 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   ];
   const environmentSources = [
     "/gallery/plaster-grain.webp",
-    "/gallery/floor-grain.webp",
   ];
   const editorialHashes = {
     "/artwork/editorial/studio-pic-stanford-480.webp":
@@ -264,7 +263,7 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     }, 0);
 
   assert.equal(byteTotal(editorialSources), 413_388);
-  assert.equal(byteTotal(environmentSources), 4_216);
+  assert.equal(byteTotal(environmentSources), 1_844);
 
   for (const [src, expected] of Object.entries(editorialHashes)) {
     const bytes = readFileSync(new URL(`../public${src}`, import.meta.url));
@@ -285,6 +284,11 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   );
 
   assert.doesNotMatch(galleryStyles, /windowlight\.webp/);
+  assert.doesNotMatch(
+    galleryStyles,
+    /gallery-architecture__floor|gallery-floor-height|floor-grain\.webp/,
+  );
+  assert.doesNotMatch(gallerySource, /gallery-architecture__floor/);
   assert.match(galleryStyles, /\.gallery-architecture__light::before/);
   assert.match(galleryStyles, /ellipse 76% 68% at 14% 10%/);
   assert.match(galleryStyles, /\.editorial-gallery__grid\s*{/);

@@ -347,7 +347,6 @@ function GalleryArchitecture() {
     <div className="gallery-architecture" aria-hidden="true">
       <div className="gallery-architecture__wall" />
       <div className="gallery-architecture__light" />
-      <div className="gallery-architecture__floor" />
     </div>
   );
 }
