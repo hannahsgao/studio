@@ -33,11 +33,12 @@ test("server-renders the artwork", async () => {
   assert.match(html, /class="site-header"/);
   assert.match(html, /href="\/about"/);
   assert.match(html, /src="\/signature\.png"/);
-  assert.match(html, />to scale<\/button>/);
+  assert.match(html, /aria-label="View the gallery"/);
+  assert.match(html, />gallery<\/button>/);
   assert.match(html, /aria-controls="gallery"/);
   assert.match(html, /aria-pressed="false"/);
   assert.match(html, /class="gallery gallery--editorial"/);
-  assert.match(html, /aria-label="Artwork gallery grid"/);
+  assert.match(html, /aria-label="Artwork grid"/);
   assert.doesNotMatch(html, /class="gallery gallery--scale"/);
   const imageTags = [
     ...html.matchAll(/<img[^>]+src="(\/artwork\/[^"]+)"[^>]*>/g),
@@ -300,7 +301,8 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     gallerySource,
     /const \[isScaleMode, setIsScaleMode\] = useState\(false\)/,
   );
-  assert.match(gallerySource, /Gallery grid opened\./);
+  assert.match(gallerySource, /Grid opened\./);
+  assert.match(gallerySource, /\{isScaleMode \? "grid" : "gallery"\}/);
   assert.match(gallerySource, /className="scale-gallery-track"/);
   assert.match(gallerySource, /className="scale-gallery-room"/);
   assert.match(gallerySource, /aria-modal="true"/);

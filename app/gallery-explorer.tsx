@@ -756,12 +756,12 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
             aria-pressed={isScaleMode}
             aria-label={
               isScaleMode
-                ? "Return to the gallery grid"
-                : "View all artworks to scale"
+                ? "Return to the artwork grid"
+                : "View the gallery"
             }
             onClick={() => updateScaleMode(!isScaleMode)}
           >
-            {isScaleMode ? "gallery" : "to scale"}
+            {isScaleMode ? "grid" : "gallery"}
           </button>
         }
       />
@@ -778,7 +778,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
         aria-label={
           isScaleMode
             ? "Artworks shown at relative scale"
-            : "Artwork gallery grid"
+            : "Artwork grid"
         }
         onKeyDown={handleKeyDown}
       >
@@ -962,7 +962,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
             ? activeArtwork
               ? `${activeArtwork.title}. Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
               : `Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
-            : "Gallery grid opened."}
+            : "Grid opened."}
       </p>
     </div>
   );
