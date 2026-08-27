@@ -283,6 +283,15 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     new URL("../vite.config.ts", import.meta.url),
     "utf8",
   );
+  const desktopStylesStart = galleryStyles.indexOf("@media (min-width: 900px)");
+  const architectureStart = galleryStyles.indexOf(
+    ".gallery-architecture {",
+    desktopStylesStart,
+  );
+  const architectureStyles = galleryStyles.slice(
+    architectureStart,
+    galleryStyles.indexOf(".gallery--scale {", architectureStart),
+  );
 
   assert.doesNotMatch(galleryStyles, /windowlight\.webp/);
   assert.doesNotMatch(
@@ -296,6 +305,25 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   assert.match(galleryStyles, /grid-template-columns: repeat\(3,/);
   assert.match(galleryStyles, /@keyframes gallery-grid-item-in/);
   assert.match(galleryStyles, /\.focused-artwork-image__full/);
+  assert.match(
+    galleryStyles,
+    /\.site-header::before\s*{[^}]*height: calc\(100% \+ var\(--gallery-top-gap\)\)[^}]*pointer-events: none/s,
+  );
+  assert.match(
+    galleryStyles,
+    /-webkit-backdrop-filter: blur\(10px\) saturate\(0\.9\)/,
+  );
+  assert.match(galleryStyles, /backdrop-filter: blur\(10px\) saturate\(0\.9\)/);
+  assert.match(galleryStyles, /-webkit-mask-image: linear-gradient/);
+  assert.match(galleryStyles, /mask-image: linear-gradient/);
+  assert.match(
+    galleryStyles,
+    /\.gallery-experience--focus \.site-header::before\s*{[^}]*backdrop-filter: none/s,
+  );
+  assert.match(
+    galleryStyles,
+    /@media \(prefers-reduced-transparency: reduce\)[\s\S]*?\.site-header::before\s*{[^}]*mask-image: none/s,
+  );
   assert.doesNotMatch(galleryStyles, /scroll-snap-type|cursor: zoom-in/);
   assert.match(
     gallerySource,
@@ -310,6 +338,7 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     gallerySource,
     /editorial-gallery__room|settleToNearestPage|settleThreshold|scrollend/,
   );
-  assert.doesNotMatch(galleryStyles, /mix-blend-mode|mask-image/);
+  assert.doesNotMatch(galleryStyles, /mix-blend-mode/);
+  assert.doesNotMatch(architectureStyles, /backdrop-filter|mask-image/);
   assert.doesNotMatch(buildConfig, /openai|sites/i);
 });
