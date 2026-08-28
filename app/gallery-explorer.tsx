@@ -285,9 +285,6 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
       setFocusedPreviewSrc(null);
       setIsFocusClosing(false);
       focusedCloseTimerRef.current = null;
-      window.requestAnimationFrame(() => {
-        focusedTriggerRef.current?.focus({ preventScroll: true });
-      });
     };
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -365,10 +362,17 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   }, [isScaleMode]);
 
   useEffect(() => {
-    if (!focusedArtwork) return;
-    window.requestAnimationFrame(() => {
-      focusedCloseRef.current?.focus({ preventScroll: true });
+    const focusTarget = focusedArtwork
+      ? focusedCloseRef.current
+      : focusedTriggerRef.current;
+    if (!focusTarget) return;
+
+    if (!focusedArtwork) focusedTriggerRef.current = null;
+    const frame = window.requestAnimationFrame(() => {
+      focusTarget.focus({ preventScroll: true });
     });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [focusedArtwork]);
 
   useEffect(() => {
