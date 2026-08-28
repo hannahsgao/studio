@@ -14,7 +14,10 @@ export function SiteHeader({
   const isAbout = currentPage === "about";
 
   return (
-    <header className="site-header" inert={isInert}>
+    <header
+      className={`site-header site-header--${currentPage}`}
+      inert={isInert}
+    >
       <a className="signature-slot" href="/" aria-label="Hannah Gao — home">
         <img
           src="/signature.png"

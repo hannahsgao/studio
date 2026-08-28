@@ -30,7 +30,7 @@ test("server-renders the artwork", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>hannah gao ✶<\/title>/);
-  assert.match(html, /class="site-header"/);
+  assert.match(html, /class="site-header site-header--gallery"/);
   assert.match(html, /href="\/about"/);
   assert.match(html, /src="\/signature\.png"/);
   assert.match(html, /aria-label="View the gallery"/);
@@ -186,6 +186,7 @@ test("server-renders the about page", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>about — hannah gao ✶<\/title>/);
+  assert.match(html, /class="site-header site-header--about"/);
   assert.match(html, /src="\/artwork\/studio-pic\.jpg"/);
   assert.match(html, /class="about-copy"/);
   const aboutList = html.match(
@@ -307,7 +308,7 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   assert.match(galleryStyles, /\.focused-artwork-image__full/);
   assert.match(
     galleryStyles,
-    /\.site-header::before\s*{[^}]*height: calc\(100% \+ var\(--gallery-top-gap\)\)[^}]*pointer-events: none/s,
+    /\.site-header--gallery::before\s*{[^}]*height: calc\(100% \+ var\(--gallery-top-gap\)\)[^}]*pointer-events: none/s,
   );
   assert.match(
     galleryStyles,
@@ -318,12 +319,17 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   assert.match(galleryStyles, /mask-image: linear-gradient/);
   assert.match(
     galleryStyles,
-    /\.gallery-experience--focus \.site-header::before\s*{[^}]*backdrop-filter: none/s,
+    /\.gallery-experience--focus \.site-header--gallery::before\s*{[^}]*backdrop-filter: none/s,
   );
   assert.match(
     galleryStyles,
-    /@media \(prefers-reduced-transparency: reduce\)[\s\S]*?\.site-header::before\s*{[^}]*mask-image: none/s,
+    /@media \(prefers-reduced-transparency: reduce\)[\s\S]*?\.site-header--gallery::before\s*{[^}]*mask-image: none/s,
   );
+  assert.match(
+    galleryStyles,
+    /\.site-header--about\s*{[^}]*position: absolute/s,
+  );
+  assert.doesNotMatch(galleryStyles, /(^|\n)\.site-header::before/m);
   assert.doesNotMatch(galleryStyles, /scroll-snap-type|cursor: zoom-in/);
   assert.match(
     gallerySource,
