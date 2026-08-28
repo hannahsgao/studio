@@ -17,6 +17,9 @@ const TARGET_WORKS_PER_WALL = 7;
 const ARTWORK_GAP_INCHES = 14;
 const MAX_PIXELS_PER_INCH = 5;
 const MIN_LAPTOP_WIDTH = 900;
+const LAPTOP_MEDIA_QUERY = `(min-width: ${MIN_LAPTOP_WIDTH}px)`;
+
+type GalleryMode = "standard" | "grid" | "scale";
 
 type GalleryExplorerProps = {
   artworks: Artwork[];
@@ -187,8 +190,19 @@ function artworkLabel(artwork: Artwork) {
     .join(", ");
 }
 
-function FocusedArtworkImage({ artwork }: { artwork: Artwork }) {
-  const previewSrc = artwork.scaleSrc ?? artwork.src;
+function getGridPreviewSrc(artwork: Artwork) {
+  return artwork.src
+    .replace(/^\/artwork\//, "/artwork/grid/")
+    .replace(/\.[^/.]+$/, ".webp");
+}
+
+function FocusedArtworkImage({
+  artwork,
+  previewSrc,
+}: {
+  artwork: Artwork;
+  previewSrc: string;
+}) {
   const [displaySrc, setDisplaySrc] = useState(previewSrc);
 
   useEffect(() => {
@@ -234,24 +248,41 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   const galleryRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const pendingFocusRef = useRef<"toggle" | "gallery" | null>(null);
-  const scaleModeRef = useRef(false);
+  const galleryModeRef = useRef<GalleryMode>("standard");
   const wheelLockRef = useRef(false);
   const wheelResetRef = useRef<number | null>(null);
   const focusedCloseRef = useRef<HTMLButtonElement>(null);
   const focusedTriggerRef = useRef<HTMLButtonElement | null>(null);
   const focusedCloseTimerRef = useRef<number | null>(null);
-  const [isScaleMode, setIsScaleMode] = useState(false);
+  const [galleryMode, setGalleryMode] = useState<GalleryMode>("standard");
   const [roomIndex, setRoomIndex] = useState(0);
   const [pixelsPerInch, setPixelsPerInch] = useState(4);
   const [activeArtwork, setActiveArtwork] = useState<Artwork | null>(null);
   const [focusedArtwork, setFocusedArtwork] = useState<Artwork | null>(null);
+  const [focusedPreviewSrc, setFocusedPreviewSrc] = useState<string | null>(
+    null,
+  );
   const [isFocusClosing, setIsFocusClosing] = useState(false);
+  const isScaleMode = galleryMode === "scale";
+  const isGridMode = galleryMode === "grid";
+  const isAlternateMode = galleryMode !== "standard";
+  const isBodyScrollLocked = isScaleMode || focusedArtwork !== null;
+
+  const openFocusedArtwork = useCallback(
+    (artwork: Artwork, previewSrc: string, trigger: HTMLButtonElement) => {
+      focusedTriggerRef.current = trigger;
+      setFocusedPreviewSrc(previewSrc);
+      setFocusedArtwork(artwork);
+    },
+    [],
+  );
 
   const closeFocusedArtwork = useCallback(() => {
     if (isFocusClosing) return;
 
     const finish = () => {
       setFocusedArtwork(null);
+      setFocusedPreviewSrc(null);
       setIsFocusClosing(false);
       focusedCloseTimerRef.current = null;
       window.requestAnimationFrame(() => {
@@ -281,9 +312,9 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     [rooms.length],
   );
 
-  const commitScaleMode = useCallback(
-    (next: boolean) => {
-      if (next) {
+  const commitGalleryMode = useCallback(
+    (next: GalleryMode) => {
+      if (next === "scale") {
         setPixelsPerInch(getPixelsPerInch(rooms));
         setRoomIndex(0);
         setActiveArtwork(null);
@@ -293,33 +324,42 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
           focusedCloseTimerRef.current = null;
         }
         setFocusedArtwork(null);
+        setFocusedPreviewSrc(null);
         setIsFocusClosing(false);
         focusedTriggerRef.current = null;
       }
-      scaleModeRef.current = next;
-      setIsScaleMode(next);
+      galleryModeRef.current = next;
+      setGalleryMode(next);
     },
     [rooms],
   );
 
-  const updateScaleMode = useCallback(
-    (next: boolean) => {
-      if (next === scaleModeRef.current) return;
-      commitScaleMode(next);
+  const updateGalleryMode = useCallback(
+    (next: GalleryMode) => {
+      if (next === galleryModeRef.current) return;
+      commitGalleryMode(next);
     },
-    [commitScaleMode],
+    [commitGalleryMode],
   );
+
+  useEffect(() => {
+    if (!isBodyScrollLocked) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isBodyScrollLocked]);
 
   useEffect(() => {
     if (!isScaleMode) return;
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     document.body.classList.add("scale-gallery-is-open");
     galleryRef.current?.focus({ preventScroll: true });
 
     return () => {
-      document.body.style.overflow = previousOverflow;
       document.body.classList.remove("scale-gallery-is-open");
     };
   }, [isScaleMode]);
@@ -332,7 +372,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   }, [focusedArtwork]);
 
   useEffect(() => {
-    if (isScaleMode || pendingFocusRef.current === null) return;
+    if (galleryMode !== "standard" || pendingFocusRef.current === null) return;
 
     const target = pendingFocusRef.current;
     pendingFocusRef.current = null;
@@ -340,20 +380,25 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
       if (target === "toggle") toggleRef.current?.focus();
       else galleryRef.current?.focus({ preventScroll: true });
     });
-  }, [isScaleMode]);
+  }, [galleryMode]);
 
   useEffect(() => {
-    const media = window.matchMedia(`(min-width: ${MIN_LAPTOP_WIDTH}px)`);
+    const media = window.matchMedia(LAPTOP_MEDIA_QUERY);
     const handleWidthChange = (event: MediaQueryListEvent) => {
-      if (!event.matches && scaleModeRef.current) {
+      const activeMode = galleryModeRef.current;
+      const isModeOutsideItsViewport = event.matches
+        ? activeMode === "grid"
+        : activeMode === "scale";
+
+      if (isModeOutsideItsViewport) {
         pendingFocusRef.current = "gallery";
-        commitScaleMode(false);
+        commitGalleryMode("standard");
       }
     };
 
     media.addEventListener("change", handleWidthChange);
     return () => media.removeEventListener("change", handleWidthChange);
-  }, [commitScaleMode]);
+  }, [commitGalleryMode]);
 
   useEffect(() => {
     if (!isScaleMode) return;
@@ -411,7 +456,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     if (event.key === "Escape") {
       event.preventDefault();
       pendingFocusRef.current = "toggle";
-      updateScaleMode(false);
+      updateGalleryMode("standard");
       return;
     }
 
@@ -439,6 +484,32 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     }
   };
 
+  const renderGridArtwork = (artwork: Artwork, index: number) => {
+    const gridPreviewSrc = getGridPreviewSrc(artwork);
+
+    return (
+      <figure className="artwork" key={artwork.src}>
+        <button
+          className="grid-artwork-trigger"
+          type="button"
+          aria-label={`Focus ${artworkLabel(artwork)}`}
+          onClick={(event) =>
+            openFocusedArtwork(artwork, gridPreviewSrc, event.currentTarget)
+          }
+        >
+          <img
+            src={gridPreviewSrc}
+            alt=""
+            loading={index < 2 ? "eager" : "lazy"}
+            fetchPriority={index === 0 ? "high" : "auto"}
+            decoding="async"
+          />
+        </button>
+        <ArtworkCaption artwork={artwork} />
+      </figure>
+    );
+  };
+
   const currentRoom = rooms[roomIndex];
   const trackStyle = {
     transform: `translateX(${-roomIndex * 100}%)`,
@@ -447,8 +518,8 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   return (
     <div
       className={`gallery-experience${
-        focusedArtwork ? " gallery-experience--focus" : ""
-      }`}
+        isGridMode ? " gallery-experience--grid" : ""
+      }${focusedArtwork ? " gallery-experience--focus" : ""}`}
     >
       <SiteHeader
         currentPage="gallery"
@@ -459,15 +530,31 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
             className="gallery-mode-toggle"
             type="button"
             aria-controls="gallery"
-            aria-pressed={isScaleMode}
+            aria-pressed={isAlternateMode}
             aria-label={
-              isScaleMode
-                ? "Return to the standard gallery"
-                : "View all artworks to scale"
+              isAlternateMode ? "Return to the standard gallery" : undefined
             }
-            onClick={() => updateScaleMode(!isScaleMode)}
+            onClick={() => {
+              if (isAlternateMode) {
+                updateGalleryMode("standard");
+                return;
+              }
+
+              updateGalleryMode(
+                window.matchMedia(LAPTOP_MEDIA_QUERY).matches
+                  ? "scale"
+                  : "grid",
+              );
+            }}
           >
-            {isScaleMode ? "standard" : "to scale"}
+            {isAlternateMode ? (
+              "standard"
+            ) : (
+              <>
+                <span className="gallery-mode-label--mobile">grid</span>
+                <span className="gallery-mode-label--desktop">to scale</span>
+              </>
+            )}
           </button>
         }
       />
@@ -475,11 +562,19 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
       <main
         id="gallery"
         ref={galleryRef}
-        className={`gallery${isScaleMode ? " gallery--scale" : ""}`}
+        className={`gallery${
+          isScaleMode ? " gallery--scale" : isGridMode ? " gallery--grid" : ""
+        }`}
         tabIndex={-1}
         inert={focusedArtwork !== null}
         aria-hidden={focusedArtwork ? true : undefined}
-        aria-label={isScaleMode ? "Artworks shown at relative scale" : undefined}
+        aria-label={
+          isScaleMode
+            ? "Artworks shown at relative scale"
+            : isGridMode
+              ? "Artworks shown in a grid"
+              : undefined
+        }
         onKeyDown={handleKeyDown}
       >
         {isScaleMode ? (
@@ -511,8 +606,11 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
                         onFocus={() => setActiveArtwork(artwork)}
                         onPointerEnter={() => setActiveArtwork(artwork)}
                         onClick={(event) => {
-                          focusedTriggerRef.current = event.currentTarget;
-                          setFocusedArtwork(artwork);
+                          openFocusedArtwork(
+                            artwork,
+                            artwork.scaleSrc ?? artwork.src,
+                            event.currentTarget,
+                          );
                         }}
                       >
                         <img
@@ -531,24 +629,41 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
               </section>
             ))}
           </div>
+        ) : isGridMode ? (
+          <>
+            {[0, 1].map((columnIndex) => (
+              <div className="grid-artwork-column" key={columnIndex}>
+                {artworks.map((artwork, index) =>
+                  index % 2 === columnIndex
+                    ? renderGridArtwork(artwork, index)
+                    : null,
+                )}
+              </div>
+            ))}
+          </>
         ) : (
-          artworks.map((artwork, index) => (
-            <figure className="artwork" key={artwork.src}>
-              <img
-                src={artwork.src}
-                alt={`${artwork.title} by Hannah Gao`}
-                loading={index < 2 ? "eager" : "lazy"}
-                fetchPriority={index === 0 ? "high" : "auto"}
-                decoding="async"
-                style={
-                  artwork.displayScale
-                    ? { width: `${artwork.displayScale * 100}%` }
-                    : undefined
-                }
-              />
-              <ArtworkCaption artwork={artwork} />
-            </figure>
-          ))
+          artworks.map((artwork, index) => {
+            const loading = index < 2 ? "eager" : "lazy";
+            const fetchPriority = index === 0 ? "high" : "auto";
+
+            return (
+              <figure className="artwork" key={artwork.src}>
+                <img
+                  src={artwork.src}
+                  alt={`${artwork.title} by Hannah Gao`}
+                  loading={loading}
+                  fetchPriority={fetchPriority}
+                  decoding="async"
+                  style={
+                    artwork.displayScale
+                      ? { width: `${artwork.displayScale * 100}%` }
+                      : undefined
+                  }
+                />
+                <ArtworkCaption artwork={artwork} />
+              </figure>
+            );
+          })
         )}
 
         {isScaleMode && (
@@ -619,7 +734,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
         )}
       </main>
 
-      {isScaleMode && focusedArtwork && (
+      {focusedArtwork && focusedPreviewSrc && (
         <section
           className={`focused-artwork-overlay${
             isFocusClosing ? " focused-artwork-overlay--closing" : ""
@@ -652,20 +767,25 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
           </button>
 
           <figure className="focused-artwork">
-            <FocusedArtworkImage artwork={focusedArtwork} />
+            <FocusedArtworkImage
+              artwork={focusedArtwork}
+              previewSrc={focusedPreviewSrc}
+            />
             <ArtworkCaption artwork={focusedArtwork} />
           </figure>
         </section>
       )}
 
       <p className="visually-hidden" aria-live="polite">
-        {isScaleMode
-          ? focusedArtwork
-            ? `${focusedArtwork.title} focused. Press Escape to close.`
-            : activeArtwork
-            ? `${activeArtwork.title}. Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
-            : `Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
-          : "Standard gallery opened."}
+        {focusedArtwork
+          ? `${focusedArtwork.title} focused. Press Escape to close.`
+          : isScaleMode
+            ? activeArtwork
+              ? `${activeArtwork.title}. Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
+              : `Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
+            : isGridMode
+              ? "Grid gallery opened."
+              : "Standard gallery opened."}
       </p>
     </div>
   );

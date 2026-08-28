@@ -4,7 +4,8 @@ The artwork portfolio served at [hannahgao.studio](https://hannahgao.studio).
 
 ## Update the gallery
 
-1. Add an optimized image to `public/artwork/`.
+1. Add an optimized image to `public/artwork/` and a 640px-long-edge WebP with
+   the same basename to `public/artwork/grid/` for the mobile grid.
 2. Add its entry to `app/artworks.ts`, including `title`, `width`, `height`,
    `medium`, and `year`. Width and height are physical dimensions in inches.
    Set both dimensions to `null` when they should not be displayed.
@@ -16,9 +17,10 @@ The artwork portfolio served at [hannahgao.studio](https://hannahgao.studio).
    `scalePage` to pin a work to a particular to-scale gallery page.
 4. Push `main` to deploy through Cloudflare.
 
-On laptop-sized screens, **to scale** opens a relative-scale overview using
-these physical dimensions. Works without both dimensions stay in the standard
-gallery and are omitted from the scale view.
+On mobile screens, **grid** opens a compact two-column overview. On
+laptop-sized screens, **to scale** opens a relative-scale overview using these
+physical dimensions. Works without both dimensions stay in the standard gallery
+and are omitted from the scale view.
 
 ## Update the personal site
 

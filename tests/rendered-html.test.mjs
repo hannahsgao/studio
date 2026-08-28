@@ -32,7 +32,8 @@ test("server-renders the artwork", async () => {
   assert.match(html, /class="site-header"/);
   assert.match(html, /href="\/about"/);
   assert.match(html, /src="\/signature\.png"/);
-  assert.match(html, />to scale<\/button>/);
+  assert.match(html, /gallery-mode-label--mobile">grid<\/span>/);
+  assert.match(html, /gallery-mode-label--desktop">to scale<\/span>/);
   assert.match(html, /aria-controls="gallery"/);
   const imageSources = [...html.matchAll(/<img[^>]+src="(\/artwork\/[^"]+)"/g)].map(
     (match) => match[1],
@@ -98,4 +99,28 @@ test("scale gallery previews stay lightweight", () => {
   }, 0);
 
   assert.ok(totalBytes < 1024 * 1024, "scale previews should stay below 1 MiB");
+});
+
+test("mobile grid previews are complete and lightweight", async () => {
+  const response = await render();
+  const html = await response.text();
+  const fullSources = [
+    ...html.matchAll(/<img[^>]+src="(\/artwork\/[^"/]+)"/g),
+  ].map((match) => match[1]);
+  const gridSources = fullSources.map((src) =>
+    src
+      .replace(/^\/artwork\//, "/artwork/grid/")
+      .replace(/\.[^/.]+$/, ".webp"),
+  );
+
+  assert.ok(gridSources.length > 0);
+  assert.equal(new Set(gridSources).size, gridSources.length);
+
+  const totalBytes = gridSources.reduce((sum, src) => {
+    const asset = new URL(`../public${src}`, import.meta.url);
+    assert.equal(existsSync(asset), true, `${src} should exist`);
+    return sum + statSync(asset).size;
+  }, 0);
+
+  assert.ok(totalBytes < 1024 * 1024, "grid previews should stay below 1 MiB");
 });

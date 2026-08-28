@@ -46,6 +46,10 @@ body {
   letter-spacing: 0.04em;
 }
 
+.gallery-experience--grid .site-header {
+  background: #fff;
+}
+
 .site-header a,
 .site-header button {
   color: inherit;
@@ -96,7 +100,7 @@ body {
 }
 
 .gallery-mode-toggle {
-  display: none;
+  display: block;
   min-width: 44px;
   padding: 0;
   border: 0;
@@ -104,6 +108,10 @@ body {
   font: inherit;
   letter-spacing: inherit;
   cursor: pointer;
+}
+
+.gallery-mode-label--desktop {
+  display: none;
 }
 
 .gallery-mode-toggle[aria-pressed="true"] {
@@ -285,9 +293,166 @@ body {
   border: 0;
 }
 
-@media (min-width: 900px) {
-  .gallery-mode-toggle {
+.focused-artwork-overlay {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: grid;
+  box-sizing: border-box;
+  padding: clamp(72px, 9vh, 112px) var(--page-gutter)
+    clamp(42px, 6vh, 72px);
+  background: rgb(255 255 255 / 24%);
+  place-items: center;
+  animation: focused-artwork-overlay-in 420ms cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+}
+
+.focused-artwork-close {
+  position: fixed;
+  z-index: 31;
+  top: var(--header-block-padding);
+  right: var(--page-gutter);
+  display: block;
+  min-width: 44px;
+  height: var(--header-content-height);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-ui);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: opacity 160ms ease;
+}
+
+.focused-artwork-close:hover {
+  opacity: 0.5;
+}
+
+.focused-artwork-close:disabled {
+  pointer-events: none;
+}
+
+.focused-artwork-close:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 3px;
+}
+
+.focused-artwork {
+  display: grid;
+  max-width: min(82vw, 1400px);
+  max-height: calc(100svh - clamp(114px, 15vh, 184px));
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: clamp(18px, 2.2vw, 28px);
+  margin: 0;
+  align-items: center;
+  justify-items: center;
+  animation: focused-artwork-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.focused-artwork > img {
+  display: block;
+  width: auto;
+  max-width: min(82vw, 1400px);
+  height: auto;
+  max-height: 72svh;
+  object-fit: contain;
+  box-shadow: var(--artwork-shadow);
+}
+
+.focused-artwork .artwork-details {
+  width: 100%;
+}
+
+.focused-artwork-overlay--closing {
+  animation: focused-artwork-overlay-out 240ms ease both;
+}
+
+.focused-artwork-overlay--closing .focused-artwork {
+  animation: focused-artwork-out 220ms ease both;
+}
+
+@media (max-width: 899px) {
+  .gallery--grid {
+    display: grid;
+    box-sizing: border-box;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: calc(
+        var(--header-block-padding) + var(--header-content-height) +
+          var(--header-block-padding) + var(--gallery-top-gap)
+      )
+      14px var(--gallery-block-padding);
+  }
+
+  .gallery--grid .grid-artwork-column {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .gallery--grid .artwork {
+    min-width: 0;
+    min-height: 0;
+    aspect-ratio: auto;
+    gap: 0;
+    padding: 0;
+  }
+
+  .gallery--grid .grid-artwork-trigger {
     display: block;
+    width: 100%;
+    height: auto;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: zoom-in;
+    outline: none;
+  }
+
+  .gallery--grid .artwork img {
+    display: block;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    max-height: none;
+  }
+
+  .gallery--grid .grid-artwork-trigger:focus-visible {
+    outline: 1px solid currentColor;
+    outline-offset: 4px;
+  }
+
+  .gallery--grid .artwork-details {
+    display: none;
+  }
+
+  .focused-artwork-overlay {
+    background: rgb(255 255 255 / 96%);
+  }
+
+  .focused-artwork {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .focused-artwork > img {
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 900px) {
+  .gallery-mode-label--mobile {
+    display: none;
+  }
+
+  .gallery-mode-label--desktop {
+    display: inline;
   }
 
   .gallery--scale {
@@ -485,87 +650,6 @@ body {
     pointer-events: none;
   }
 
-  .focused-artwork-overlay {
-    position: fixed;
-    z-index: 30;
-    inset: 0;
-    display: grid;
-    box-sizing: border-box;
-    padding: clamp(72px, 9vh, 112px) var(--page-gutter)
-      clamp(42px, 6vh, 72px);
-    background: rgb(255 255 255 / 24%);
-    place-items: center;
-    animation: focused-artwork-overlay-in 420ms cubic-bezier(0.22, 1, 0.36, 1)
-      both;
-  }
-
-  .focused-artwork-close {
-    position: fixed;
-    z-index: 31;
-    top: var(--header-block-padding);
-    right: var(--page-gutter);
-    display: block;
-    min-width: 44px;
-    height: var(--header-content-height);
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    font-size: var(--font-size-ui);
-    line-height: var(--line-height-ui);
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    transition: opacity 160ms ease;
-  }
-
-  .focused-artwork-close:hover {
-    opacity: 0.5;
-  }
-
-  .focused-artwork-close:disabled {
-    pointer-events: none;
-  }
-
-  .focused-artwork-close:focus-visible {
-    outline: 1px solid currentColor;
-    outline-offset: 3px;
-  }
-
-  .focused-artwork {
-    display: grid;
-    max-width: min(82vw, 1400px);
-    max-height: calc(100svh - clamp(114px, 15vh, 184px));
-    grid-template-rows: minmax(0, 1fr) auto;
-    gap: clamp(18px, 2.2vw, 28px);
-    margin: 0;
-    align-items: center;
-    justify-items: center;
-    animation: focused-artwork-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  }
-
-  .focused-artwork > img {
-    display: block;
-    width: auto;
-    max-width: min(82vw, 1400px);
-    height: auto;
-    max-height: 72svh;
-    object-fit: contain;
-    box-shadow: var(--artwork-shadow);
-  }
-
-  .focused-artwork .artwork-details {
-    width: 100%;
-  }
-
-  .focused-artwork-overlay--closing {
-    animation: focused-artwork-overlay-out 240ms ease both;
-  }
-
-  .focused-artwork-overlay--closing .focused-artwork {
-    animation: focused-artwork-out 220ms ease both;
-  }
-
   .scale-gallery-status,
   .scale-gallery-controls {
     position: fixed;
@@ -658,6 +742,10 @@ body {
 }
 
 @media (forced-colors: active), (prefers-contrast: more) {
+  .gallery-experience--grid .site-header {
+    background: Canvas;
+  }
+
   .gallery--scale {
     background: #fff;
   }
