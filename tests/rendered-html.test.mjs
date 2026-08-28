@@ -308,6 +308,18 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   assert.match(galleryStyles, /\.focused-artwork-image__full/);
   assert.match(
     galleryStyles,
+    /@media \(hover: hover\) and \(pointer: fine\)\s*{[\s\S]*?\.editorial-artwork-trigger:hover img\s*{[^}]*box-shadow:/,
+  );
+  assert.match(
+    galleryStyles,
+    /@media \(hover: hover\) and \(pointer: fine\) and \(prefers-reduced-motion: no-preference\)\s*{[\s\S]*?\.editorial-artwork-trigger:hover img\s*{[^}]*transform: translateY\(-1px\)/,
+  );
+  assert.doesNotMatch(
+    galleryStyles,
+    /\.editorial-artwork-trigger:hover img\s*{[^}]*opacity:/s,
+  );
+  assert.match(
+    galleryStyles,
     /\.site-header--gallery::before\s*{[^}]*height: calc\(100% \+ var\(--gallery-top-gap\)\)[^}]*pointer-events: none/s,
   );
   assert.match(

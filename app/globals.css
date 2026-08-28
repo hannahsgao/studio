@@ -319,8 +319,8 @@ body {
 
 .editorial-artwork-trigger img {
   transition:
-    opacity 280ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .editorial-artwork-trigger picture {
@@ -333,14 +333,23 @@ body {
   place-items: center;
 }
 
-.editorial-artwork-trigger:hover img {
-  opacity: 0.86;
-  transform: translateY(-2px);
-}
-
 .editorial-artwork-trigger:focus-visible {
   outline: 1px solid currentColor;
   outline-offset: 7px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .editorial-artwork-trigger:hover img {
+    box-shadow:
+      0 2px 3px rgb(30 25 20 / 5%),
+      0 10px 26px rgb(30 25 20 / 12%);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .editorial-artwork-trigger:hover img {
+    transform: translateY(-1px);
+  }
 }
 
 .artwork img {
