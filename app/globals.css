@@ -1023,6 +1023,15 @@ body {
 }
 
 @media (max-width: 560px) {
+  .site-header--about {
+    position: static;
+    padding-bottom: var(--gallery-top-gap);
+  }
+
+  .about-page {
+    padding-top: 0;
+  }
+
   .about-copy {
     margin-top: 36px;
     gap: 24px;

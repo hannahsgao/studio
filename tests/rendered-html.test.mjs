@@ -285,6 +285,10 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     "utf8",
   );
   const desktopStylesStart = galleryStyles.indexOf("@media (min-width: 900px)");
+  const mobileAboutStylesStart = galleryStyles.indexOf(
+    "@media (max-width: 560px)",
+  );
+  const mobileAboutStyles = galleryStyles.slice(mobileAboutStylesStart);
   const architectureStart = galleryStyles.indexOf(
     ".gallery-architecture {",
     desktopStylesStart,
@@ -340,6 +344,14 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   assert.match(
     galleryStyles,
     /\.site-header--about\s*{[^}]*position: absolute/s,
+  );
+  assert.match(
+    mobileAboutStyles,
+    /\.site-header--about\s*{[^}]*position: static;[^}]*padding-bottom: var\(--gallery-top-gap\)/s,
+  );
+  assert.match(
+    mobileAboutStyles,
+    /\.about-page\s*{[^}]*padding-top: 0/s,
   );
   assert.doesNotMatch(galleryStyles, /(^|\n)\.site-header::before/m);
   assert.doesNotMatch(galleryStyles, /scroll-snap-type|cursor: zoom-in/);
