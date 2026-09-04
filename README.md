@@ -16,8 +16,9 @@ The artwork portfolio served at [hannahgao.studio](https://hannahgao.studio).
    `scalePage` to pin a work to a particular to-scale gallery page.
 4. Push `main` to deploy through Cloudflare.
 
-On laptop-sized screens, **to scale** opens a relative-scale overview using
-these physical dimensions. Works without both dimensions stay in the standard
+On mobile screens, **grid** opens a compact two-column overview. On
+laptop-sized screens, **gallery** opens a relative-scale overview using these
+physical dimensions. Works without both dimensions stay in the editorial
 gallery and are omitted from the scale view.
 
 ## Update the personal site

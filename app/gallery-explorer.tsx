@@ -17,6 +17,9 @@ const TARGET_WORKS_PER_WALL = 7;
 const ARTWORK_GAP_INCHES = 14;
 const MAX_PIXELS_PER_INCH = 5;
 const MIN_LAPTOP_WIDTH = 900;
+const LAPTOP_MEDIA_QUERY = `(min-width: ${MIN_LAPTOP_WIDTH}px)`;
+
+type GalleryMode = "editorial" | "grid" | "scale";
 const EDITORIAL_PAGES = [
   {
     id: "studio-and-dontlook",
@@ -351,86 +354,115 @@ function GalleryArchitecture() {
   );
 }
 
-function EditorialGallery({
-  pages,
-  onOpenArtwork,
-}: {
-  pages: EditorialPage[];
+type EditorialArtworkProps = {
+  artwork: Artwork;
+  artworkIndex: number;
+  eagerCount: number;
   onOpenArtwork: (
     artwork: Artwork,
     previewSrc: string,
     trigger: HTMLButtonElement,
   ) => void;
+};
+
+function EditorialArtwork({
+  artwork,
+  artworkIndex,
+  eagerCount,
+  onOpenArtwork,
+}: EditorialArtworkProps) {
+  const imageSize = EDITORIAL_IMAGE_SIZES[artwork.src];
+  const previewSrc =
+    GRID_PREVIEWS[artwork.src] ?? artwork.scaleSrc ?? artwork.src;
+  if (!imageSize) {
+    throw new Error(
+      `Editorial gallery is missing image dimensions for ${artwork.src}.`,
+    );
+  }
+
+  return (
+    <figure
+      className="artwork editorial-gallery__artwork"
+      data-gallery-index={artworkIndex + 1}
+      style={
+        {
+          "--gallery-entry-delay": `${Math.min(artworkIndex, 12) * 35}ms`,
+        } as CSSProperties
+      }
+    >
+      <button
+        className="editorial-artwork-trigger"
+        type="button"
+        aria-haspopup="dialog"
+        aria-label={`Focus ${artworkLabel(artwork)}`}
+        onClick={(event) => {
+          const currentSrc =
+            event.currentTarget.querySelector("img")?.currentSrc;
+          const currentPath = currentSrc
+            ? new URL(currentSrc, window.location.href).pathname
+            : previewSrc;
+
+          onOpenArtwork(
+            artwork,
+            currentPath === artwork.src
+              ? artwork.src
+              : currentSrc || previewSrc,
+            event.currentTarget,
+          );
+        }}
+      >
+        <picture>
+          {previewSrc !== artwork.src && <source srcSet={previewSrc} />}
+          <img
+            src={artwork.src}
+            width={imageSize.width}
+            height={imageSize.height}
+            alt=""
+            loading={artworkIndex < eagerCount ? "eager" : "lazy"}
+            fetchPriority={artworkIndex === 0 ? "high" : "auto"}
+            decoding="async"
+          />
+        </picture>
+      </button>
+      <ArtworkCaption artwork={artwork} />
+    </figure>
+  );
+}
+
+function EditorialGallery({
+  pages,
+  mode,
+  onOpenArtwork,
+}: {
+  pages: EditorialPage[];
+  mode: Exclude<GalleryMode, "scale">;
+  onOpenArtwork: EditorialArtworkProps["onOpenArtwork"];
 }) {
   const galleryArtworks = pages.flatMap((page) => page.artworks);
+  const renderArtwork = (artwork: Artwork, artworkIndex: number) => (
+    <EditorialArtwork
+      artwork={artwork}
+      artworkIndex={artworkIndex}
+      eagerCount={mode === "grid" ? 2 : 1}
+      key={artwork.src}
+      onOpenArtwork={onOpenArtwork}
+    />
+  );
+
+  if (mode === "grid") {
+    return (
+      <div className="compact-gallery">
+        <div className="compact-gallery__grid" data-gallery-view="compact-grid">
+          {galleryArtworks.map(renderArtwork)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="editorial-gallery">
-      <div
-        className="editorial-gallery__grid"
-        data-gallery-view="grid"
-      >
-        {galleryArtworks.map((artwork, artworkIndex) => {
-          const imageSize = EDITORIAL_IMAGE_SIZES[artwork.src];
-          const previewSrc =
-            GRID_PREVIEWS[artwork.src] ?? artwork.scaleSrc ?? artwork.src;
-          if (!imageSize) {
-            throw new Error(
-              `Editorial gallery is missing image dimensions for ${artwork.src}.`,
-            );
-          }
-
-          return (
-            <figure
-              className="artwork editorial-gallery__artwork"
-              key={artwork.src}
-              data-gallery-index={artworkIndex + 1}
-              style={
-                {
-                  "--gallery-entry-delay": `${Math.min(artworkIndex, 12) * 35}ms`,
-                } as CSSProperties
-              }
-            >
-              <button
-                className="editorial-artwork-trigger"
-                type="button"
-                aria-haspopup="dialog"
-                aria-label={`Focus ${artworkLabel(artwork)}`}
-                onClick={(event) => {
-                  const currentSrc =
-                    event.currentTarget.querySelector("img")?.currentSrc;
-                  const currentPath = currentSrc
-                    ? new URL(currentSrc, window.location.href).pathname
-                    : previewSrc;
-
-                  onOpenArtwork(
-                    artwork,
-                    currentPath === artwork.src
-                      ? artwork.src
-                      : currentSrc || previewSrc,
-                    event.currentTarget,
-                  );
-                }}
-              >
-                <picture>
-                  {previewSrc !== artwork.src && (
-                    <source srcSet={previewSrc} />
-                  )}
-                  <img
-                    src={artwork.src}
-                    width={imageSize.width}
-                    height={imageSize.height}
-                    alt=""
-                    loading={artworkIndex === 0 ? "eager" : "lazy"}
-                    fetchPriority={artworkIndex === 0 ? "high" : "auto"}
-                    decoding="async"
-                  />
-                </picture>
-              </button>
-              <ArtworkCaption artwork={artwork} />
-            </figure>
-          );
-        })}
+      <div className="editorial-gallery__grid" data-gallery-view="grid">
+        {galleryArtworks.map(renderArtwork)}
       </div>
     </div>
   );
@@ -505,13 +537,14 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   const galleryRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const pendingFocusRef = useRef<"toggle" | "gallery" | null>(null);
-  const scaleModeRef = useRef(false);
+  const galleryModeRef = useRef<GalleryMode>("editorial");
   const wheelLockRef = useRef(false);
   const wheelResetRef = useRef<number | null>(null);
   const focusedCloseRef = useRef<HTMLButtonElement>(null);
   const focusedTriggerRef = useRef<HTMLButtonElement | null>(null);
   const focusedCloseTimerRef = useRef<number | null>(null);
-  const [isScaleMode, setIsScaleMode] = useState(false);
+  const [galleryMode, setGalleryMode] =
+    useState<GalleryMode>("editorial");
   const [roomIndex, setRoomIndex] = useState(0);
   const [pixelsPerInch, setPixelsPerInch] = useState(4);
   const [activeArtwork, setActiveArtwork] = useState<Artwork | null>(null);
@@ -520,6 +553,10 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     null,
   );
   const [isFocusClosing, setIsFocusClosing] = useState(false);
+  const isScaleMode = galleryMode === "scale";
+  const isGridMode = galleryMode === "grid";
+  const isAlternateMode = galleryMode !== "editorial";
+  const isBodyScrollLocked = isScaleMode || focusedArtwork !== null;
 
   const openFocusedArtwork = useCallback(
     (artwork: Artwork, previewSrc: string, trigger: HTMLButtonElement) => {
@@ -538,9 +575,6 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
       setFocusedPreviewSrc(null);
       setIsFocusClosing(false);
       focusedCloseTimerRef.current = null;
-      window.requestAnimationFrame(() => {
-        focusedTriggerRef.current?.focus({ preventScroll: true });
-      });
     };
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -566,9 +600,9 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     [rooms.length],
   );
 
-  const commitScaleMode = useCallback(
-    (next: boolean) => {
-      if (next) {
+  const commitGalleryMode = useCallback(
+    (next: GalleryMode) => {
+      if (next === "scale") {
         setPixelsPerInch(getPixelsPerInch(rooms));
         setRoomIndex(0);
         setActiveArtwork(null);
@@ -582,22 +616,22 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
         setIsFocusClosing(false);
         focusedTriggerRef.current = null;
       }
-      scaleModeRef.current = next;
-      setIsScaleMode(next);
+      galleryModeRef.current = next;
+      setGalleryMode(next);
     },
     [rooms],
   );
 
-  const updateScaleMode = useCallback(
-    (next: boolean) => {
-      if (next === scaleModeRef.current) return;
-      commitScaleMode(next);
+  const updateGalleryMode = useCallback(
+    (next: GalleryMode) => {
+      if (next === galleryModeRef.current) return;
+      commitGalleryMode(next);
     },
-    [commitScaleMode],
+    [commitGalleryMode],
   );
 
   useEffect(() => {
-    if (!isScaleMode && !focusedArtwork) return;
+    if (!isBodyScrollLocked) return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -605,7 +639,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [focusedArtwork, isScaleMode]);
+  }, [isBodyScrollLocked]);
 
   useEffect(() => {
     if (!isScaleMode) return;
@@ -619,14 +653,21 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   }, [isScaleMode]);
 
   useEffect(() => {
-    if (!focusedArtwork) return;
-    window.requestAnimationFrame(() => {
-      focusedCloseRef.current?.focus({ preventScroll: true });
+    const focusTarget = focusedArtwork
+      ? focusedCloseRef.current
+      : focusedTriggerRef.current;
+    if (!focusTarget) return;
+
+    if (!focusedArtwork) focusedTriggerRef.current = null;
+    const frame = window.requestAnimationFrame(() => {
+      focusTarget.focus({ preventScroll: true });
     });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [focusedArtwork]);
 
   useEffect(() => {
-    if (isScaleMode || pendingFocusRef.current === null) return;
+    if (galleryMode !== "editorial" || pendingFocusRef.current === null) return;
 
     const target = pendingFocusRef.current;
     pendingFocusRef.current = null;
@@ -634,20 +675,25 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
       if (target === "toggle") toggleRef.current?.focus();
       else galleryRef.current?.focus({ preventScroll: true });
     });
-  }, [isScaleMode]);
+  }, [galleryMode]);
 
   useEffect(() => {
-    const media = window.matchMedia(`(min-width: ${MIN_LAPTOP_WIDTH}px)`);
+    const media = window.matchMedia(LAPTOP_MEDIA_QUERY);
     const handleWidthChange = (event: MediaQueryListEvent) => {
-      if (!event.matches && scaleModeRef.current) {
+      const activeMode = galleryModeRef.current;
+      const isModeOutsideItsViewport = event.matches
+        ? activeMode === "grid"
+        : activeMode === "scale";
+
+      if (isModeOutsideItsViewport) {
         pendingFocusRef.current = "gallery";
-        commitScaleMode(false);
+        commitGalleryMode("editorial");
       }
     };
 
     media.addEventListener("change", handleWidthChange);
     return () => media.removeEventListener("change", handleWidthChange);
-  }, [commitScaleMode]);
+  }, [commitGalleryMode]);
 
   useEffect(() => {
     if (!isScaleMode) return;
@@ -705,7 +751,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     if (event.key === "Escape") {
       event.preventDefault();
       pendingFocusRef.current = "toggle";
-      updateScaleMode(false);
+      updateGalleryMode("editorial");
       return;
     }
 
@@ -741,8 +787,8 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   return (
     <div
       className={`gallery-experience${
-        focusedArtwork ? " gallery-experience--focus" : ""
-      }`}
+        isGridMode ? " gallery-experience--grid" : ""
+      }${focusedArtwork ? " gallery-experience--focus" : ""}`}
     >
       <SiteHeader
         currentPage="gallery"
@@ -753,15 +799,37 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
             className="gallery-mode-toggle"
             type="button"
             aria-controls="gallery"
-            aria-pressed={isScaleMode}
+            aria-pressed={isAlternateMode}
             aria-label={
               isScaleMode
                 ? "Return to the artwork grid"
-                : "View the gallery"
+                : isGridMode
+                  ? "Return to the editorial gallery"
+                  : undefined
             }
-            onClick={() => updateScaleMode(!isScaleMode)}
+            onClick={() => {
+              if (isAlternateMode) {
+                updateGalleryMode("editorial");
+                return;
+              }
+
+              updateGalleryMode(
+                window.matchMedia(LAPTOP_MEDIA_QUERY).matches
+                  ? "scale"
+                  : "grid",
+              );
+            }}
           >
-            {isScaleMode ? "grid" : "gallery"}
+            {isScaleMode ? (
+              "grid"
+            ) : isGridMode ? (
+              "standard"
+            ) : (
+              <>
+                <span className="gallery-mode-label--mobile">grid</span>
+                <span className="gallery-mode-label--desktop">gallery</span>
+              </>
+            )}
           </button>
         }
       />
@@ -770,7 +838,11 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
         id="gallery"
         ref={galleryRef}
         className={`gallery${
-          isScaleMode ? " gallery--scale" : " gallery--editorial"
+          isScaleMode
+            ? " gallery--scale"
+            : isGridMode
+              ? " gallery--grid"
+              : " gallery--editorial"
         }`}
         tabIndex={-1}
         inert={focusedArtwork !== null}
@@ -778,7 +850,9 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
         aria-label={
           isScaleMode
             ? "Artworks shown at relative scale"
-            : "Artwork grid"
+            : isGridMode
+              ? "Artworks shown in a compact grid"
+              : "Artwork grid"
         }
         onKeyDown={handleKeyDown}
       >
@@ -839,6 +913,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
           </div>
         ) : (
           <EditorialGallery
+            mode={isGridMode ? "grid" : "editorial"}
             pages={editorialPages}
             onOpenArtwork={openFocusedArtwork}
           />
@@ -962,7 +1037,9 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
             ? activeArtwork
               ? `${activeArtwork.title}. Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
               : `Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
-            : "Grid opened."}
+            : isGridMode
+              ? "Compact grid opened."
+              : "Editorial gallery opened."}
       </p>
     </div>
   );

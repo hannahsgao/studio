@@ -33,8 +33,8 @@ test("server-renders the artwork", async () => {
   assert.match(html, /class="site-header site-header--gallery"/);
   assert.match(html, /href="\/about"/);
   assert.match(html, /src="\/signature\.png"/);
-  assert.match(html, /aria-label="View the gallery"/);
-  assert.match(html, />gallery<\/button>/);
+  assert.match(html, /gallery-mode-label--mobile">grid<\/span>/);
+  assert.match(html, /gallery-mode-label--desktop">gallery<\/span>/);
   assert.match(html, /aria-controls="gallery"/);
   assert.match(html, /aria-pressed="false"/);
   assert.match(html, /class="gallery gallery--editorial"/);
@@ -285,6 +285,17 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     "utf8",
   );
   const desktopStylesStart = galleryStyles.indexOf("@media (min-width: 900px)");
+  const compactStylesStart = galleryStyles.indexOf(
+    "@media (max-width: 899px)",
+  );
+  const compactStylesEnd = galleryStyles.indexOf(
+    "@media (min-width: 600px)",
+    compactStylesStart,
+  );
+  const compactStyles = galleryStyles.slice(
+    compactStylesStart,
+    compactStylesEnd,
+  );
   const mobileAboutStylesStart = galleryStyles.indexOf(
     "@media (max-width: 560px)",
   );
@@ -342,6 +353,26 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     /@media \(prefers-reduced-transparency: reduce\)[\s\S]*?\.site-header--gallery::before\s*{[^}]*mask-image: none/s,
   );
   assert.match(
+    compactStyles,
+    /\.gallery-experience--grid \.site-header--gallery\s*{[^}]*background: #fff/s,
+  );
+  assert.match(
+    compactStyles,
+    /\.gallery-experience--grid \.site-header--gallery::before\s*{[^}]*content: none/s,
+  );
+  assert.match(
+    compactStyles,
+    /\.compact-gallery__grid\s*{[^}]*grid-template-columns: repeat\(2,[^}]*gap: 12px/s,
+  );
+  assert.match(
+    compactStyles,
+    /\.compact-gallery \.editorial-artwork-trigger,[\s\S]*?aspect-ratio: auto/s,
+  );
+  assert.match(
+    compactStyles,
+    /\.compact-gallery \.artwork-details\s*{[^}]*display: none/s,
+  );
+  assert.match(
     galleryStyles,
     /\.site-header--about\s*{[^}]*position: absolute/s,
   );
@@ -357,10 +388,18 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   assert.doesNotMatch(galleryStyles, /scroll-snap-type|cursor: zoom-in/);
   assert.match(
     gallerySource,
-    /const \[isScaleMode, setIsScaleMode\] = useState\(false\)/,
+    /type GalleryMode = "editorial" \| "grid" \| "scale"/,
   );
-  assert.match(gallerySource, /Grid opened\./);
-  assert.match(gallerySource, /\{isScaleMode \? "grid" : "gallery"\}/);
+  assert.match(
+    gallerySource,
+    /useState<GalleryMode>\("editorial"\)/,
+  );
+  assert.match(gallerySource, /Compact grid opened\./);
+  assert.match(gallerySource, /gallery-mode-label--mobile">grid/);
+  assert.match(gallerySource, /gallery-mode-label--desktop">gallery/);
+  assert.match(gallerySource, /data-gallery-view="compact-grid"/);
+  assert.match(gallerySource, /eagerCount=\{mode === "grid" \? 2 : 1\}/);
+  assert.match(gallerySource, /const focusTarget = focusedArtwork/);
   assert.match(gallerySource, /className="scale-gallery-track"/);
   assert.match(gallerySource, /className="scale-gallery-room"/);
   assert.match(gallerySource, /aria-modal="true"/);
