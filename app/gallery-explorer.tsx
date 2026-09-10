@@ -14,9 +14,11 @@ import type { Artwork } from "./artworks";
 import { SiteHeader } from "./site-header";
 
 const TARGET_WORKS_PER_WALL = 7;
-const ARTWORK_GAP_INCHES = 14;
-const MAX_PIXELS_PER_INCH = 5;
+const ARTWORK_GAP_INCHES = 12;
+const MAX_PIXELS_PER_INCH = 5.25;
 const MIN_LAPTOP_WIDTH = 900;
+const STUDIO_STOOL_WIDTH_INCHES = 16;
+const STUDIO_STOOL_HEIGHT_INCHES = 27;
 const LAPTOP_MEDIA_QUERY = `(min-width: ${MIN_LAPTOP_WIDTH}px)`;
 
 type GalleryMode = "editorial" | "grid" | "scale";
@@ -148,7 +150,6 @@ type ScaleRoom = {
   artworks: Artwork[];
   widthInches: number;
   heightInches: number;
-  yearLabel: string;
 };
 
 type EditorialPage = {
@@ -269,19 +270,13 @@ function makeScaleRooms(artworks: Artwork[]): ScaleRoom[] {
     );
   }
 
-  return roomArtworks.map((group) => {
-    const years = [...new Set(group.map((artwork) => artwork.year))];
-
-    return {
-      artworks: group,
-      widthInches: artworkSpan(group),
-      heightInches: Math.max(
-        ...group.map((artwork) => artwork.height ?? 0),
-      ),
-      yearLabel:
-        years.length > 1 ? `${years[0]}—${years.at(-1)}` : years[0] ?? "",
-    };
-  });
+  return roomArtworks.map((group) => ({
+    artworks: group,
+    widthInches: artworkSpan(group),
+    heightInches: Math.max(
+      ...group.map((artwork) => artwork.height ?? 0),
+    ),
+  }));
 }
 
 function getPixelsPerInch(rooms: ScaleRoom[]) {
@@ -351,6 +346,30 @@ function GalleryArchitecture() {
       <div className="gallery-architecture__wall" />
       <div className="gallery-architecture__light" />
     </div>
+  );
+}
+
+function ScaleReference({ pixelsPerInch }: { pixelsPerInch: number }) {
+  return (
+    <figure
+      className="scale-gallery-reference"
+      style={{
+        width: STUDIO_STOOL_WIDTH_INCHES * pixelsPerInch,
+        height: STUDIO_STOOL_HEIGHT_INCHES * pixelsPerInch,
+      }}
+      role="img"
+      aria-label="Studio stool scale reference, 27 inches tall"
+    >
+      <img
+        src="/gallery/studio-stool@1x.webp"
+        srcSet="/gallery/studio-stool@1x.webp 1x, /gallery/studio-stool@2x.webp 2x"
+        width="128"
+        height="216"
+        alt=""
+        decoding="async"
+        draggable="false"
+      />
+    </figure>
   );
 }
 
@@ -779,7 +798,6 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     }
   };
 
-  const currentRoom = rooms[roomIndex];
   const trackStyle = {
     transform: `translateX(${-roomIndex * 100}%)`,
   } satisfies CSSProperties;
@@ -787,6 +805,8 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   return (
     <div
       className={`gallery-experience${
+        isScaleMode ? " gallery-experience--scale" : ""
+      }${
         isGridMode ? " gallery-experience--grid" : ""
       }${focusedArtwork ? " gallery-experience--focus" : ""}`}
     >
@@ -866,8 +886,8 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
             {rooms.map((room, index) => (
               <section
                 className="scale-gallery-room"
-                key={`${room.yearLabel}-${index}`}
-                aria-label={`Gallery wall ${index + 1} of ${rooms.length}, ${room.yearLabel}`}
+                key={`gallery-wall-${index}`}
+                aria-label={`Gallery wall ${index + 1} of ${rooms.length}`}
                 aria-hidden={index !== roomIndex}
                 inert={index !== roomIndex}
               >
@@ -905,6 +925,24 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
                           decoding="async"
                         />
                       </button>
+                      <figcaption
+                        className="scale-artwork-title"
+                        aria-hidden="true"
+                      >
+                        <span className="scale-artwork-title__name">
+                          {artwork.title}
+                        </span>
+                        <span className="scale-artwork-title__details">
+                          {[
+                            artwork.medium,
+                            artwork.width !== null && artwork.height !== null
+                              ? `${artwork.width} × ${artwork.height} in`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      </figcaption>
                     </figure>
                   ))}
                 </div>
@@ -921,68 +959,53 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
 
         {isScaleMode && (
           <>
-            <div className="scale-gallery-status">
-              {activeArtwork ? (
-                <>
-                  <strong>{activeArtwork.title}</strong>
-                  <span>
-                    {[activeArtwork.medium,
-                      activeArtwork.width !== null &&
-                      activeArtwork.height !== null
-                        ? `${activeArtwork.width} × ${activeArtwork.height} in`
-                        : null,
-                      activeArtwork.year]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <strong>{currentRoom.yearLabel}</strong>
-                  <span>scroll or use arrow keys</span>
-                </>
-              )}
-            </div>
+            <ScaleReference pixelsPerInch={pixelsPerInch} />
 
-            <nav
-              className="scale-gallery-controls"
-              aria-label="Gallery wall navigation"
-            >
-              <button
-                type="button"
-                aria-label="Previous gallery wall"
-                disabled={roomIndex === 0}
-                onClick={() => setRoom(roomIndex - 1)}
+            <div className="scale-gallery-footer">
+              <nav
+                className="scale-gallery-controls"
+                aria-label="Gallery wall navigation"
               >
-                <svg
-                  className="scale-gallery-chevron"
-                  viewBox="0 0 16 16"
-                  aria-hidden="true"
-                  focusable="false"
+                <button
+                  type="button"
+                  aria-label="Previous gallery wall"
+                  disabled={roomIndex === 0}
+                  onClick={() => setRoom(roomIndex - 1)}
                 >
-                  <path d="M10.25 3.5 5.75 8l4.5 4.5" />
-                </svg>
-              </button>
-              <span>
-                {String(roomIndex + 1).padStart(2, "0")} /{" "}
-                {String(rooms.length).padStart(2, "0")}
-              </span>
-              <button
-                type="button"
-                aria-label="Next gallery wall"
-                disabled={roomIndex === rooms.length - 1}
-                onClick={() => setRoom(roomIndex + 1)}
-              >
-                <svg
-                  className="scale-gallery-chevron"
-                  viewBox="0 0 16 16"
-                  aria-hidden="true"
-                  focusable="false"
+                  <svg
+                    className="scale-gallery-chevron"
+                    viewBox="0 0 16 16"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path d="M10.25 3.5 5.75 8l4.5 4.5" />
+                  </svg>
+                </button>
+                <span className="scale-gallery-position">
+                  <span className="scale-gallery-position__count">
+                    {roomIndex + 1} / {rooms.length}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  aria-label="Next gallery wall"
+                  disabled={roomIndex === rooms.length - 1}
+                  onClick={() => setRoom(roomIndex + 1)}
                 >
-                  <path d="M5.75 3.5 10.25 8l-4.5 4.5" />
-                </svg>
-              </button>
-            </nav>
+                  <svg
+                    className="scale-gallery-chevron"
+                    viewBox="0 0 16 16"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path d="M5.75 3.5 10.25 8l-4.5 4.5" />
+                  </svg>
+                </button>
+                <span className="visually-hidden">
+                  Scroll or use arrow keys to move between gallery walls.
+                </span>
+              </nav>
+            </div>
           </>
         )}
       </main>
@@ -1035,8 +1058,8 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
           ? `${focusedArtwork.title} focused. Press Escape to close.`
           : isScaleMode
             ? activeArtwork
-              ? `${activeArtwork.title}. Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
-              : `Wall ${roomIndex + 1} of ${rooms.length}, ${currentRoom.yearLabel}.`
+              ? `${activeArtwork.title}. Wall ${roomIndex + 1} of ${rooms.length}.`
+              : `Wall ${roomIndex + 1} of ${rooms.length}.`
             : isGridMode
               ? "Compact grid opened."
               : "Editorial gallery opened."}

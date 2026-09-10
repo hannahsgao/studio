@@ -239,6 +239,9 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   ];
   const environmentSources = [
     "/gallery/plaster-grain.webp",
+    "/gallery/studio-stool@1x.webp",
+    "/gallery/studio-stool@2x.webp",
+    "/gallery/windowlight.svg",
   ];
   const editorialHashes = {
     "/artwork/editorial/studio-pic-stanford-480.webp":
@@ -265,7 +268,7 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     }, 0);
 
   assert.equal(byteTotal(editorialSources), 413_388);
-  assert.equal(byteTotal(environmentSources), 1_844);
+  assert.equal(byteTotal(environmentSources), 63_082);
 
   for (const [src, expected] of Object.entries(editorialHashes)) {
     const bytes = readFileSync(new URL(`../public${src}`, import.meta.url));
@@ -278,6 +281,10 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   );
   const gallerySource = readFileSync(
     new URL("../app/gallery-explorer.tsx", import.meta.url),
+    "utf8",
+  );
+  const vectorShadowSource = readFileSync(
+    new URL("../public/gallery/windowlight.svg", import.meta.url),
     "utf8",
   );
   const buildConfig = readFileSync(
@@ -310,13 +317,54 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   );
 
   assert.doesNotMatch(galleryStyles, /windowlight\.webp/);
+  assert.doesNotMatch(galleryStyles, /--gallery-canopy/);
+  assert.match(
+    galleryStyles,
+    /background: url\("\/gallery\/windowlight\.svg"\) no-repeat top left \/ contain/,
+  );
+  assert.match(
+    galleryStyles,
+    /\.gallery-architecture__light::before\s*{[^}]*filter: blur\(clamp\(11px, 0\.9vw, 16px\)\);[^}]*opacity: 0\.28/s,
+  );
+  assert.match(
+    galleryStyles,
+    /\.gallery-architecture__light::after\s*{[^}]*filter: blur\(clamp\(3\.5px, 0\.32vw, 4px\)\);[^}]*opacity: 1/s,
+  );
+  assert.match(vectorShadowSource, /viewBox="0 0 640 427"/);
+  assert.equal(vectorShadowSource.match(/<path\b/g)?.length, 3);
+  assert.match(vectorShadowSource, /<path[^>]*d="M[^"]*Q/);
+  assert.match(vectorShadowSource, /id="canopy-outer"/);
+  assert.match(vectorShadowSource, /id="canopy-middle"/);
+  assert.match(vectorShadowSource, /id="canopy-detail"/);
+  assert.match(
+    vectorShadowSource,
+    /stroke="#e6a83f"[\s\S]*?stroke-opacity="0\.028"[\s\S]*?stroke-width="3\.25"/,
+  );
+  assert.match(vectorShadowSource, /fill-opacity="0\.012"/);
+  assert.match(vectorShadowSource, /fill-opacity="0\.028"/);
+  assert.match(vectorShadowSource, /fill-opacity="0\.08"/);
+  assert.doesNotMatch(
+    vectorShadowSource,
+    /<image\b|<filter\b|windowlight\.webp/,
+  );
   assert.doesNotMatch(
     galleryStyles,
     /gallery-architecture__floor|gallery-floor-height|floor-grain\.webp/,
   );
   assert.doesNotMatch(gallerySource, /gallery-architecture__floor/);
   assert.match(galleryStyles, /\.gallery-architecture__light::before/);
-  assert.match(galleryStyles, /ellipse 76% 68% at 14% 10%/);
+  assert.match(
+    galleryStyles,
+    /\.gallery-architecture__light\s*{[^}]*top: clamp\(-92px, -6svh, -46px\);[^}]*width: min\(52vw, 780px\)/s,
+  );
+  assert.match(
+    galleryStyles,
+    /\.gallery--editorial \.gallery-architecture__light,[\s\S]*?\.gallery--grid \.gallery-architecture__light\s*{[^}]*display: none/s,
+  );
+  assert.match(
+    galleryStyles,
+    /\.gallery-experience--scale \.site-header--gallery::before\s*{[^}]*content: none/s,
+  );
   assert.match(galleryStyles, /\.editorial-gallery__grid\s*{/);
   assert.match(galleryStyles, /grid-template-columns: repeat\(3,/);
   assert.match(galleryStyles, /@keyframes gallery-grid-item-in/);
@@ -392,6 +440,10 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   );
   assert.match(
     gallerySource,
+    /isScaleMode \? " gallery-experience--scale" : ""/,
+  );
+  assert.match(
+    gallerySource,
     /useState<GalleryMode>\("editorial"\)/,
   );
   assert.match(gallerySource, /Compact grid opened\./);
@@ -402,6 +454,85 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   assert.match(gallerySource, /const focusTarget = focusedArtwork/);
   assert.match(gallerySource, /className="scale-gallery-track"/);
   assert.match(gallerySource, /className="scale-gallery-room"/);
+  assert.match(gallerySource, /const ARTWORK_GAP_INCHES = 12/);
+  assert.match(gallerySource, /const MAX_PIXELS_PER_INCH = 5\.25/);
+  assert.match(gallerySource, /className="scale-gallery-footer"/);
+  assert.doesNotMatch(gallerySource, /scale-gallery-position__year/);
+  assert.doesNotMatch(gallerySource, /yearLabel/);
+  assert.match(gallerySource, /\{roomIndex \+ 1\} \/ \{rooms\.length\}/);
+  assert.match(gallerySource, /className="scale-artwork-title"/);
+  assert.match(gallerySource, /className="scale-artwork-title__name"/);
+  assert.match(
+    gallerySource,
+    /className="scale-artwork-title__details"[\s\S]*?artwork\.medium,[\s\S]*?`\$\{artwork\.width\} × \$\{artwork\.height\} in`[\s\S]*?\.join\(" · "\)/,
+  );
+  assert.doesNotMatch(gallerySource, /className="scale-gallery-status"/);
+  assert.match(
+    gallerySource,
+    /openFocusedArtwork\(\s*artwork,\s*artwork\.scaleSrc \?\? artwork\.src,/s,
+  );
+  assert.match(
+    gallerySource,
+    /className="focused-artwork-image__full"[\s\S]*?src=\{artwork\.src\}/,
+  );
+  assert.match(gallerySource, /\.decode\(\)\s*\.then\(revealFullResolution/);
+  assert.match(
+    gallerySource,
+    /Scroll or use arrow keys to move between gallery walls\./,
+  );
+  assert.match(gallerySource, /const STUDIO_STOOL_HEIGHT_INCHES = 27/);
+  assert.match(
+    gallerySource,
+    /height: STUDIO_STOOL_HEIGHT_INCHES \* pixelsPerInch/,
+  );
+  assert.match(
+    gallerySource,
+    /aria-label="Studio stool scale reference, 27 inches tall"/,
+  );
+  assert.match(
+    gallerySource,
+    /srcSet="\/gallery\/studio-stool@1x\.webp 1x, \/gallery\/studio-stool@2x\.webp 2x"/,
+  );
+  assert.match(
+    galleryStyles,
+    /\.scale-gallery-reference\s*{[^}]*position: fixed;[^}]*bottom: 126px;[^}]*pointer-events: none/s,
+  );
+  assert.match(
+    galleryStyles,
+    /\.scale-gallery-reference::after\s*{[^}]*left: 42%;[^}]*width: 185%;[^}]*background: radial-gradient\(/s,
+  );
+  assert.match(
+    galleryStyles,
+    /\.scale-artwork button\s*{[^}]*position: relative;[^}]*overflow: hidden;[^}]*box-shadow:[^}]*4px 8px 18px -6px/s,
+  );
+  assert.match(
+    galleryStyles,
+    /\.scale-artwork img\s*{[^}]*position: absolute;[^}]*inset: 0;[^}]*width: 100%;[^}]*height: 100%;[^}]*object-fit: cover;/s,
+  );
+  assert.match(
+    galleryStyles,
+    /\.scale-gallery-footer\s*{[^}]*position: fixed;[^}]*left: 50%;[^}]*transform: translateX\(-50%\);/s,
+  );
+  assert.match(
+    galleryStyles,
+    /\.scale-artwork-title\s*{[^}]*position: absolute;[^}]*font-size: 10px;[^}]*opacity: 0;/s,
+  );
+  assert.match(
+    galleryStyles,
+    /\.scale-artwork button:hover \+ \.scale-artwork-title,[\s\S]*?\.scale-artwork button:focus-visible \+ \.scale-artwork-title\s*{[^}]*opacity: 1;/s,
+  );
+  assert.match(
+    galleryStyles,
+    /\.scale-artwork-title__details\s*{[^}]*font-size: 9px;[^}]*letter-spacing: 0\.055em;/s,
+  );
+  assert.match(
+    galleryStyles,
+    /\.scale-gallery-controls\s*{[^}]*display: flex;[^}]*gap: 8px;/s,
+  );
+  assert.match(
+    galleryStyles,
+    /\.focused-artwork-image\s*{[^}]*max-width: min\(92vw, 1800px\);[^}]*max-height: 82svh;/s,
+  );
   assert.match(gallerySource, /aria-modal="true"/);
   assert.doesNotMatch(
     gallerySource,
