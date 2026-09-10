@@ -200,16 +200,6 @@ export const artworks: Artwork[] = [
     year: "2024",
   },
   {
-    src: "/artwork/tiedup.jpg",
-    scaleSrc: "/artwork/scale/tiedup.webp",
-    title: "Tied Up",
-    width: 48,
-    height: 96,
-    medium: "Acrylic on Composite Board",
-    year: "2024",
-    scalePage: 2,
-  },
-  {
     src: "/artwork/bastion.jpg",
     scaleSrc: "/artwork/scale/bastion.webp",
     title: "Bastion",

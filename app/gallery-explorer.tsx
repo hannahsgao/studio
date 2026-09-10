@@ -75,8 +75,6 @@ const EDITORIAL_PAGES = [
   },
 ] as const;
 
-const EDITORIAL_OMITTED_SOURCES = new Set(["/artwork/tiedup.jpg"]);
-
 const GRID_PREVIEWS: Record<string, string> = {
   "/artwork/studio-pic-stanford.jpg":
     "/artwork/editorial/studio-pic-stanford-480.webp",
@@ -137,7 +135,6 @@ const EDITORIAL_IMAGE_SIZES: Record<
   "/artwork/still-life.jpg": { width: 2000, height: 1416 },
   "/artwork/studio-pic-stanford.jpg": { width: 1500, height: 2000 },
   "/artwork/the-walls-we-build.jpg": { width: 1970, height: 2000 },
-  "/artwork/tiedup.jpg": { width: 990, height: 2000 },
   "/artwork/unravel.jpg": { width: 1341, height: 2000 },
   "/artwork/wash.jpg": { width: 1984, height: 2000 },
 };
@@ -328,9 +325,7 @@ function makeEditorialPages(artworks: Artwork[]) {
     }),
   })).filter((page) => page.artworks.length > 0);
   const unassigned = artworks.filter(
-    (artwork) =>
-      !assignedSources.has(artwork.src) &&
-      !EDITORIAL_OMITTED_SOURCES.has(artwork.src),
+    (artwork) => !assignedSources.has(artwork.src),
   );
 
   if (unassigned.length > 0) {
@@ -840,16 +835,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
               );
             }}
           >
-            {isScaleMode ? (
-              "grid"
-            ) : isGridMode ? (
-              "standard"
-            ) : (
-              <>
-                <span className="gallery-mode-label--mobile">grid</span>
-                <span className="gallery-mode-label--desktop">gallery</span>
-              </>
-            )}
+            {isAlternateMode ? "grid" : "gallery"}
           </button>
         }
       />

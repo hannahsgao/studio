@@ -1,18 +1,22 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 
 type SiteHeaderProps = {
-  currentPage: "gallery" | "about";
+  currentPage: "gallery" | "about" | "blog";
   galleryControl?: ReactNode;
   isInert?: boolean;
 };
+
+const pages = [
+  { id: "gallery", href: "/", label: "gallery" },
+  { id: "about", href: "/about", label: "about" },
+  { id: "blog", href: "/blog", label: "blog" },
+] as const;
 
 export function SiteHeader({
   currentPage,
   galleryControl,
   isInert = false,
 }: SiteHeaderProps) {
-  const isAbout = currentPage === "about";
-
   return (
     <header
       className={`site-header site-header--${currentPage}`}
@@ -28,14 +32,26 @@ export function SiteHeader({
         />
       </a>
       <nav className="site-navigation" aria-label="Main navigation">
-        {galleryControl}
-        <a
-          className="route-link"
-          href={isAbout ? "/" : "/about"}
-          aria-label={isAbout ? "Gallery" : "About"}
-        >
-          {isAbout ? "gallery" : "about"}
-        </a>
+        {pages.map((page) => {
+          if (
+            page.id === "gallery" &&
+            currentPage === "gallery" &&
+            galleryControl
+          ) {
+            return <Fragment key={page.id}>{galleryControl}</Fragment>;
+          }
+
+          return (
+            <a
+              aria-current={page.id === currentPage ? "page" : undefined}
+              className="route-link"
+              href={page.href}
+              key={page.id}
+            >
+              {page.label}
+            </a>
+          );
+        })}
       </nav>
     </header>
   );

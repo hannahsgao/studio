@@ -95,6 +95,10 @@ body {
   content: none;
 }
 
+.site-header--blog {
+  background: #fff;
+}
+
 .site-header a,
 .site-header button {
   color: inherit;
@@ -117,6 +121,7 @@ body {
 .signature-slot {
   position: relative;
   display: block;
+  flex-shrink: 0;
   width: 98px;
   height: var(--header-content-height);
   overflow: hidden;
@@ -144,6 +149,12 @@ body {
   gap: clamp(18px, 2vw, 30px);
 }
 
+@media (max-width: 374px) {
+  .site-navigation {
+    gap: 0;
+  }
+}
+
 .gallery-mode-toggle {
   display: block;
   min-width: 44px;
@@ -155,17 +166,15 @@ body {
   cursor: pointer;
 }
 
-.gallery-mode-label--desktop {
-  display: none;
-}
-
-.gallery-mode-toggle[aria-pressed="true"] {
+.gallery-mode-toggle[aria-pressed="true"],
+.route-link[aria-current="page"] {
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
 }
 
-.about-page {
+.about-page,
+.blog-page {
   box-sizing: border-box;
   min-height: 100svh;
   padding: calc(
@@ -175,9 +184,17 @@ body {
     var(--page-gutter) var(--gallery-block-padding);
 }
 
-.about-content {
+.about-content,
+.blog-content {
   width: min(100%, 1000px);
   margin: 0 auto;
+}
+
+.blog-page {
+  padding-top: calc(
+    var(--header-block-padding) + var(--header-block-padding) +
+      var(--header-content-height) + clamp(28px, 4vw, 48px)
+  );
 }
 
 .about-hero {
@@ -244,7 +261,8 @@ body {
   opacity: 0.35;
 }
 
-.about-copy a {
+.about-copy a,
+.blog-index-list a {
   color: inherit;
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
@@ -252,13 +270,154 @@ body {
   transition: opacity 160ms ease;
 }
 
-.about-copy a:hover {
+.about-copy a:hover,
+.blog-index-list a:hover {
   opacity: 0.65;
 }
 
-.about-copy a:focus-visible {
+.about-copy a:focus-visible,
+.blog-index-list a:focus-visible {
   outline: 1px solid currentColor;
   outline-offset: 4px;
+}
+
+.blog-content {
+  width: min(100%, 600px);
+  margin: 0 auto;
+}
+
+.blog-header {
+  margin-bottom: clamp(42px, 6vw, 68px);
+}
+
+.blog-title {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 400;
+}
+
+.blog-dek {
+  margin: 14px 0 0;
+  color: #555;
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+}
+
+.blog-subtitle {
+  margin: 14px 0 0;
+  color: #777;
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-ui);
+  letter-spacing: 0.04em;
+}
+
+.blog-copy {
+  display: grid;
+  width: 100%;
+  gap: 1.5em;
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+}
+
+.blog-copy p,
+.blog-copy h2,
+.blog-copy figure {
+  margin: 0;
+}
+
+.blog-copy h2 {
+  margin-top: clamp(28px, 4vw, 46px);
+  font-size: 1em;
+  font-weight: 600;
+  line-height: var(--line-height-body);
+}
+
+.blog-copy em {
+  font-style: italic;
+}
+
+.blog-list {
+  display: grid;
+  gap: 0.35em;
+  margin: -0.35em 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.blog-index-list {
+  display: grid;
+  gap: 0.45em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.blog-index-list li {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  padding-left: 1.15em;
+}
+
+.blog-index-list li::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  content: ">";
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.blog-index-list a {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+}
+
+.blog-index-list time {
+  flex: none;
+  color: #777;
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-ui);
+  letter-spacing: 0.04em;
+}
+
+.blog-list li {
+  position: relative;
+  padding-left: 1.15em;
+}
+
+.blog-list li::before {
+  position: absolute;
+  left: 0;
+  content: ">";
+}
+
+.blog-section-number {
+  margin-top: clamp(28px, 4vw, 46px) !important;
+  color: #666;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-ui);
+  letter-spacing: 0.04em;
+}
+
+.blog-section-number:first-child {
+  margin-top: 0 !important;
+}
+
+.blog-figure {
+  width: min(100%, 320px);
+  margin-right: auto !important;
+  margin-left: auto !important;
+}
+
+.blog-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .gallery {
@@ -599,14 +758,6 @@ body {
 }
 
 @media (min-width: 900px) {
-  .gallery-mode-label--mobile {
-    display: none;
-  }
-
-  .gallery-mode-label--desktop {
-    display: inline;
-  }
-
   .gallery-mode-toggle {
     display: block;
   }

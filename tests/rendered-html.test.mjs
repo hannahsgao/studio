@@ -24,6 +24,57 @@ async function render(pathname = "/") {
   );
 }
 
+function attributeValue(attributes, name) {
+  return attributes.match(new RegExp(`(?:^|\\s)${name}="([^"]*)"`))?.[1];
+}
+
+function assertRouteNavigation(html, currentPage) {
+  const navigation = html.match(
+    /<nav[^>]*class="site-navigation"[^>]*>([\s\S]*?)<\/nav>/,
+  );
+  assert.ok(navigation);
+
+  const routeLinks = [...navigation[1].matchAll(/<a\b([^>]*)>([^<]+)<\/a>/g)]
+    .filter((match) => attributeValue(match[1], "class") === "route-link")
+    .map((match) => ({
+      current: attributeValue(match[1], "aria-current"),
+      href: attributeValue(match[1], "href"),
+      label: match[2],
+    }));
+
+  const expectedLinks = [
+    {
+      current: currentPage === "about" ? "page" : undefined,
+      href: "/about",
+      label: "about",
+    },
+    {
+      current: currentPage === "blog" ? "page" : undefined,
+      href: "/blog",
+      label: "blog",
+    },
+  ];
+
+  if (currentPage === "gallery") {
+    assert.deepEqual(routeLinks, expectedLinks);
+    assert.equal(navigation[1].match(/<(?:a|button)\b/g)?.length, 3);
+    assert.match(
+      navigation[1],
+      /<button[^>]*class="gallery-mode-toggle"[^>]*>gallery<\/button>/,
+    );
+    return;
+  }
+
+  assert.deepEqual(routeLinks, [
+    {
+      current: undefined,
+      href: "/",
+      label: "gallery",
+    },
+    ...expectedLinks,
+  ]);
+}
+
 test("server-renders the artwork", async () => {
   const response = await render();
   assert.equal(response.status, 200);
@@ -31,10 +82,8 @@ test("server-renders the artwork", async () => {
   const html = await response.text();
   assert.match(html, /<title>hannah gao ✶<\/title>/);
   assert.match(html, /class="site-header site-header--gallery"/);
-  assert.match(html, /href="\/about"/);
+  assertRouteNavigation(html, "gallery");
   assert.match(html, /src="\/signature\.png"/);
-  assert.match(html, /gallery-mode-label--mobile">grid<\/span>/);
-  assert.match(html, /gallery-mode-label--desktop">gallery<\/span>/);
   assert.match(html, /aria-controls="gallery"/);
   assert.match(html, /aria-pressed="false"/);
   assert.match(html, /class="gallery gallery--editorial"/);
@@ -201,8 +250,72 @@ test("server-renders the about page", async () => {
   );
   assert.match(html, /href="mailto:hannahgaoart@gmail\.com"/);
   assert.match(html, /class="artwork-details"/);
-  assert.match(html, /href="\/"/);
-  assert.match(html, />gallery<\/a>/);
+  assertRouteNavigation(html, "about");
+});
+
+test("server-renders the blog index", async () => {
+  const response = await render("/blog");
+  assert.equal(response.status, 200);
+
+  const html = await response.text();
+  assert.match(html, /<title>blog — hannah gao ✶<\/title>/);
+  assert.match(html, /aria-label="Blog posts"/);
+  assert.match(html, /<h1 class="visually-hidden">Blog<\/h1>/);
+  assert.doesNotMatch(html, /class="blog-title">blog<\/h1>/);
+  assert.match(html, /class="blog-index-list"/);
+  assert.match(html, /href="\/blog\/new-frontiers"/);
+  assert.match(html, />new frontiers<\/a>/);
+  assert.match(html, />06\.23\.2026<\/time>/);
+  assert.match(html, /href="\/blog\/thalassophilia"/);
+  assert.match(html, />thalassophilia<\/a>/);
+  assert.match(html, />12\.18\.2025<\/time>/);
+  assert.doesNotMatch(html, /Many undercurrents and overcurrents have pushed AI/);
+  assertRouteNavigation(html, "blog");
+});
+
+test("server-renders the new frontiers essay", async () => {
+  const response = await render("/blog/new-frontiers");
+  assert.equal(response.status, 200);
+
+  const html = await response.text();
+  assert.match(html, /<title>new frontiers — hannah gao ✶<\/title>/);
+  assert.match(html, /<h1 class="blog-title">new frontiers<\/h1>/);
+  assert.match(html, /my notes-app musings on the next few years/);
+  assert.match(html, /dateTime="2026-06-23">06\.23\.2026<\/time>/);
+  assert.match(html, /class="blog-copy"/);
+  assert.match(html, /Many undercurrents and overcurrents have pushed AI/);
+  assert.match(html, /The most pressing bottleneck for AI is legitimacy\./);
+  assert.match(html, /<p>How do we earn back trust\?<\/p>/);
+  assert.doesNotMatch(html, /<h2>How do we earn back trust\?<\/h2>/);
+  assert.match(html, /America needs a new[\s\S]*frontier\./);
+  const blogList = html.match(
+    /<ul[^>]*class="blog-list"[^>]*>([\s\S]*?)<\/ul>/,
+  );
+  assert.ok(blogList);
+  assert.equal(blogList[1].match(/<li>/g)?.length, 2);
+  assertRouteNavigation(html, "blog");
+});
+
+test("server-renders the thalassophilia essay", async () => {
+  const response = await render("/blog/thalassophilia");
+  assert.equal(response.status, 200);
+
+  const html = await response.text();
+  assert.match(html, /<title>thalassophilia — hannah gao ✶<\/title>/);
+  assert.match(html, /<h1 class="blog-title">thalassophilia<\/h1>/);
+  assert.match(html, /on escaping the cornfields/);
+  assert.match(html, /dateTime="2025-12-18">12\.18\.2025<\/time>/);
+  assert.match(html, /src="\/blog\/thalassophilia\.webp"/);
+  assert.equal(
+    existsSync(
+      new URL("../public/blog/thalassophilia.webp", import.meta.url),
+    ),
+    true,
+  );
+  assert.equal(html.match(/class="blog-section-number"/g)?.length, 7);
+  assert.match(html, /Lately I’ve been restless as ever\./);
+  assert.match(html, /I will choose again and again to dive\./);
+  assertRouteNavigation(html, "blog");
 });
 
 test("scale gallery previews stay lightweight", () => {
@@ -214,7 +327,8 @@ test("scale gallery previews stay lightweight", () => {
     ...manifest.matchAll(/scaleSrc: "(\/artwork\/scale\/[^"]+)"/g),
   ].map((match) => match[1]);
 
-  assert.equal(scaleSources.length, 24);
+  assert.doesNotMatch(manifest, /tiedup|Tied Up/i);
+  assert.equal(scaleSources.length, 23);
   assert.equal(new Set(scaleSources).size, scaleSources.length);
 
   const totalBytes = scaleSources.reduce((sum, src) => {
@@ -223,7 +337,7 @@ test("scale gallery previews stay lightweight", () => {
     return sum + statSync(asset).size;
   }, 0);
 
-  assert.equal(totalBytes, 444_818);
+  assert.equal(totalBytes, 325_658);
   assert.ok(totalBytes < 1024 * 1024, "scale previews should stay below 1 MiB");
 });
 
@@ -447,8 +561,7 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     /useState<GalleryMode>\("editorial"\)/,
   );
   assert.match(gallerySource, /Compact grid opened\./);
-  assert.match(gallerySource, /gallery-mode-label--mobile">grid/);
-  assert.match(gallerySource, /gallery-mode-label--desktop">gallery/);
+  assert.match(gallerySource, /\{isAlternateMode \? "grid" : "gallery"\}/);
   assert.match(gallerySource, /data-gallery-view="compact-grid"/);
   assert.match(gallerySource, /eagerCount=\{mode === "grid" \? 2 : 1\}/);
   assert.match(gallerySource, /const focusTarget = focusedArtwork/);
