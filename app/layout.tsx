@@ -11,10 +11,10 @@ export const metadata = {
     url: "https://hannahgao.studio",
     images: [
       {
-        url: "/og.png",
-        width: 1732,
-        height: 908,
-        alt: "Hannah Gao — paintings shown at relative scale",
+        url: "/artwork/studio-pic.jpg",
+        width: 2000,
+        height: 1500,
+        alt: "Hannah Gao painting in her home studio",
       },
     ],
   },
@@ -22,7 +22,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "hannah gao ✶",
     description: "Paintings and works by Hannah Gao.",
-    images: ["/og.png"],
+    images: ["/artwork/studio-pic.jpg"],
   },
 };
 

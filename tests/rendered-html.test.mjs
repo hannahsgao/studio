@@ -81,6 +81,14 @@ test("server-renders the artwork", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>hannah gao ✶<\/title>/);
+  assert.match(
+    html,
+    /<meta property="og:image" content="https:\/\/hannahgao\.studio\/artwork\/studio-pic\.jpg"\/>/,
+  );
+  assert.match(
+    html,
+    /<meta name="twitter:image" content="https:\/\/hannahgao\.studio\/artwork\/studio-pic\.jpg"\/>/,
+  );
   assert.match(html, /class="site-header site-header--gallery"/);
   assertRouteNavigation(html, "gallery");
   assert.match(html, /src="\/signature\.png"/);
@@ -560,8 +568,25 @@ test("editorial gallery assets stay faithful and lightweight", () => {
     gallerySource,
     /useState<GalleryMode>\("editorial"\)/,
   );
-  assert.match(gallerySource, /Compact grid opened\./);
-  assert.match(gallerySource, /\{isAlternateMode \? "grid" : "gallery"\}/);
+  assert.match(
+    gallerySource,
+    /useState<\s*"gallery" \| "grid"\s*>\("gallery"\)/,
+  );
+  assert.match(
+    gallerySource,
+    /media\.matches && galleryModeRef\.current === "editorial"[\s\S]*?commitGalleryMode\("scale"\)/,
+  );
+  assert.match(gallerySource, /useLayoutEffect\(\(\) =>/);
+  assert.match(
+    gallerySource,
+    /if \(shouldFocusScaleRef\.current\)[\s\S]*?galleryRef\.current\?\.focus/,
+  );
+  assert.match(
+    gallerySource,
+    /event\.key === "Escape"[\s\S]*?setGalleryModeLabel\("grid"\)[\s\S]*?updateGalleryMode\("editorial"\)/,
+  );
+  assert.match(gallerySource, /Artwork grid opened\./);
+  assert.match(gallerySource, /\{galleryModeLabel\}/);
   assert.match(gallerySource, /data-gallery-view="compact-grid"/);
   assert.match(gallerySource, /eagerCount=\{mode === "grid" \? 2 : 1\}/);
   assert.match(gallerySource, /const focusTarget = focusedArtwork/);
