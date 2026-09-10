@@ -166,7 +166,6 @@ body {
   cursor: pointer;
 }
 
-.gallery-mode-toggle[aria-pressed="true"],
 .route-link[aria-current="page"] {
   text-decoration: underline;
   text-decoration-thickness: 1px;

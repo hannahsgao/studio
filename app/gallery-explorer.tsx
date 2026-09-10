@@ -561,7 +561,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   const focusedCloseTimerRef = useRef<number | null>(null);
   const [galleryMode, setGalleryMode] =
     useState<GalleryMode>("editorial");
-  const [galleryModeLabel, setGalleryModeLabel] = useState<
+  const [galleryView, setGalleryView] = useState<
     "gallery" | "grid"
   >("gallery");
   const [roomIndex, setRoomIndex] = useState(0);
@@ -708,7 +708,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     const handleWidthChange = (event: MediaQueryListEvent) => {
       const activeMode = galleryModeRef.current;
       const defaultMode = event.matches ? "scale" : "editorial";
-      setGalleryModeLabel("gallery");
+      setGalleryView("gallery");
       shouldFocusScaleRef.current = false;
 
       if (activeMode !== defaultMode) {
@@ -777,7 +777,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     if (event.key === "Escape") {
       event.preventDefault();
       pendingFocusRef.current = "toggle";
-      setGalleryModeLabel("grid");
+      setGalleryView("grid");
       updateGalleryMode("editorial");
       return;
     }
@@ -809,6 +809,8 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   const trackStyle = {
     transform: `translateX(${-roomIndex * 100}%)`,
   } satisfies CSSProperties;
+  const galleryToggleLabel =
+    galleryView === "gallery" ? "grid" : "gallery";
 
   return (
     <div
@@ -827,16 +829,11 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
             className="gallery-mode-toggle"
             type="button"
             aria-controls="gallery"
-            aria-pressed={galleryModeLabel === "grid"}
-            aria-label={`Switch to ${
-              galleryModeLabel === "gallery" ? "grid" : "gallery"
-            } view`}
+            aria-label={`Switch to ${galleryToggleLabel} view`}
             onClick={() => {
               const isLaptop = window.matchMedia(LAPTOP_MEDIA_QUERY).matches;
-              const nextLabel =
-                galleryModeLabel === "gallery" ? "grid" : "gallery";
               const nextMode =
-                nextLabel === "gallery"
+                galleryToggleLabel === "gallery"
                   ? isLaptop
                     ? "scale"
                     : "editorial"
@@ -844,12 +841,12 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
                     ? "editorial"
                     : "grid";
 
-              setGalleryModeLabel(nextLabel);
+              setGalleryView(galleryToggleLabel);
               shouldFocusScaleRef.current = nextMode === "scale";
               updateGalleryMode(nextMode);
             }}
           >
-            {galleryModeLabel}
+            {galleryToggleLabel}
           </button>
         }
       />
@@ -872,7 +869,9 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
             ? "Artworks shown at relative scale"
             : isGridMode
               ? "Artworks shown in a compact grid"
-              : "Artwork grid"
+              : galleryView === "grid"
+                ? "Artwork grid"
+                : "Artwork gallery"
         }
         onKeyDown={handleKeyDown}
       >
@@ -1062,7 +1061,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
               : `Wall ${roomIndex + 1} of ${rooms.length}.`
             : isGridMode
               ? "Artwork grid opened."
-              : galleryModeLabel === "grid"
+              : galleryView === "grid"
                 ? "Artwork grid opened."
                 : "Gallery opened."}
       </p>

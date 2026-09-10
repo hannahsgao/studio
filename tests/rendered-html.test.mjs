@@ -60,7 +60,7 @@ function assertRouteNavigation(html, currentPage) {
     assert.equal(navigation[1].match(/<(?:a|button)\b/g)?.length, 3);
     assert.match(
       navigation[1],
-      /<button[^>]*class="gallery-mode-toggle"[^>]*>gallery<\/button>/,
+      /<button[^>]*class="gallery-mode-toggle"[^>]*>grid<\/button>/,
     );
     return;
   }
@@ -93,9 +93,9 @@ test("server-renders the artwork", async () => {
   assertRouteNavigation(html, "gallery");
   assert.match(html, /src="\/signature\.png"/);
   assert.match(html, /aria-controls="gallery"/);
-  assert.match(html, /aria-pressed="false"/);
+  assert.doesNotMatch(html, /aria-pressed=/);
   assert.match(html, /class="gallery gallery--editorial"/);
-  assert.match(html, /aria-label="Artwork grid"/);
+  assert.match(html, /aria-label="Artwork gallery"/);
   assert.doesNotMatch(html, /class="gallery gallery--scale"/);
   const imageTags = [
     ...html.matchAll(/<img[^>]+src="(\/artwork\/[^"]+)"[^>]*>/g),
@@ -583,10 +583,14 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   );
   assert.match(
     gallerySource,
-    /event\.key === "Escape"[\s\S]*?setGalleryModeLabel\("grid"\)[\s\S]*?updateGalleryMode\("editorial"\)/,
+    /event\.key === "Escape"[\s\S]*?setGalleryView\("grid"\)[\s\S]*?updateGalleryMode\("editorial"\)/,
   );
   assert.match(gallerySource, /Artwork grid opened\./);
-  assert.match(gallerySource, /\{galleryModeLabel\}/);
+  assert.match(
+    gallerySource,
+    /galleryView === "gallery" \? "grid" : "gallery"/,
+  );
+  assert.match(gallerySource, /\{galleryToggleLabel\}/);
   assert.match(gallerySource, /data-gallery-view="compact-grid"/);
   assert.match(gallerySource, /eagerCount=\{mode === "grid" \? 2 : 1\}/);
   assert.match(gallerySource, /const focusTarget = focusedArtwork/);
