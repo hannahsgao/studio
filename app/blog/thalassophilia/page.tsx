@@ -20,10 +20,6 @@ export default function ThalassophiliaPage() {
             </p>
             <p className="blog-subtitle">
               <time dateTime="2025-12-18">12.18.2025</time>
-              {" · "}
-              <a href="https://hannahgao.substack.com/p/thalassophilia">
-                read on Substack
-              </a>
             </p>
           </header>
 

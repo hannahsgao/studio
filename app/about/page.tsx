@@ -3,7 +3,7 @@ import { artworks } from "../artworks";
 import { SiteHeader } from "../site-header";
 
 export const metadata = {
-  title: "about — hannah gao ✶",
+  title: "hannah gao ✶",
   description: "About Hannah Gao.",
 };
 
