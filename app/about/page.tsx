@@ -36,7 +36,7 @@ export default function AboutPage() {
             <div className="about-section">
               <p>hi! i'm hannah gao</p>
               <p>
-                i'm a rising junior at stanford studying math and cs and a bit
+                i'm a rising junior at stanford studying math, cs, and a bit
                 of art practice.
               </p>
               <p>currently working on memory and personalization at openai.</p>
