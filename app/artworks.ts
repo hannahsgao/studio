@@ -74,14 +74,6 @@ export const artworks: Artwork[] = [
     year: "2024",
     scalePage: 2,
   },
-  //{
-  //  src: "/artwork/landscape.jpg",
-  //  title: "Landscape",
- //   width: 12,
- //   height: 12,
- //   medium: "Oil on Canvas",
-  //  year: "2022",
-  //},
   {
     src: "/artwork/boots.jpg",
     scaleSrc: "/artwork/scale/boots.webp",

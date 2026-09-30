@@ -23,57 +23,32 @@ const STUDIO_STOOL_HEIGHT_INCHES = 27;
 const LAPTOP_MEDIA_QUERY = `(min-width: ${MIN_LAPTOP_WIDTH}px)`;
 
 type GalleryMode = "editorial" | "grid" | "scale";
-const EDITORIAL_PAGES = [
-  {
-    id: "studio-and-dontlook",
-    sources: [
-      "/artwork/studio-pic-stanford.jpg",
-      "/artwork/DONTLOOKATME.jpg",
-      "/artwork/DONTLOOK-sketch.jpg",
-    ],
-  },
-  {
-    id: "unravel-through-fresh",
-    sources: [
-      "/artwork/unravel.jpg",
-      "/artwork/blame.jpg",
-      "/artwork/handsoff.jpg",
-      "/artwork/rising.jpg",
-      "/artwork/heritage.jpg",
-      "/artwork/fresh.jpg",
-    ],
-  },
-  {
-    id: "bastion-through-wash",
-    sources: [
-      "/artwork/bastion.jpg",
-      "/artwork/anubis-dream.jpg",
-      "/artwork/the-walls-we-build.jpg",
-      "/artwork/wash.jpg",
-    ],
-  },
-  {
-    id: "mirror-through-oasis",
-    sources: [
-      "/artwork/mirror:rorrim.jpg",
-      "/artwork/inside-out.jpg",
-      "/artwork/reflection.jpg",
-      "/artwork/oasis.jpg",
-    ],
-  },
-  {
-    id: "small-works-and-still-lifes",
-    sources: [
-      "/artwork/roar.jpg",
-      "/artwork/cozy.jpg",
-      "/artwork/boots.jpg",
-      "/artwork/cows.jpg",
-      "/artwork/pick.jpg",
-      "/artwork/gotcha.jpg",
-      "/artwork/still-life-egg.jpg",
-      "/artwork/still-life.jpg",
-    ],
-  },
+const EDITORIAL_ORDER = [
+  "/artwork/studio-pic-stanford.jpg",
+  "/artwork/DONTLOOKATME.jpg",
+  "/artwork/DONTLOOK-sketch.jpg",
+  "/artwork/unravel.jpg",
+  "/artwork/blame.jpg",
+  "/artwork/handsoff.jpg",
+  "/artwork/rising.jpg",
+  "/artwork/heritage.jpg",
+  "/artwork/fresh.jpg",
+  "/artwork/bastion.jpg",
+  "/artwork/anubis-dream.jpg",
+  "/artwork/the-walls-we-build.jpg",
+  "/artwork/wash.jpg",
+  "/artwork/mirror:rorrim.jpg",
+  "/artwork/inside-out.jpg",
+  "/artwork/reflection.jpg",
+  "/artwork/oasis.jpg",
+  "/artwork/roar.jpg",
+  "/artwork/cozy.jpg",
+  "/artwork/boots.jpg",
+  "/artwork/cows.jpg",
+  "/artwork/pick.jpg",
+  "/artwork/gotcha.jpg",
+  "/artwork/still-life-egg.jpg",
+  "/artwork/still-life.jpg",
 ] as const;
 
 const GRID_PREVIEWS: Record<string, string> = {
@@ -148,11 +123,6 @@ type ScaleRoom = {
   artworks: Artwork[];
   widthInches: number;
   heightInches: number;
-};
-
-type EditorialPage = {
-  id: string;
-  artworks: Artwork[];
 };
 
 type RoomPartition = {
@@ -307,7 +277,7 @@ function artworkLabel(artwork: Artwork) {
     .join(", ");
 }
 
-function makeEditorialPages(artworks: Artwork[]) {
+function orderEditorialArtworks(artworks: Artwork[]) {
   const artworkBySource = new Map(
     artworks.map((artwork) => [artwork.src, artwork]),
   );
@@ -315,25 +285,14 @@ function makeEditorialPages(artworks: Artwork[]) {
     throw new Error("Editorial gallery requires unique artwork sources.");
   }
 
-  const assignedSources = new Set<string>();
-  const pages: EditorialPage[] = EDITORIAL_PAGES.map((page) => ({
-    id: page.id,
-    artworks: page.sources.flatMap((source) => {
-      const artwork = artworkBySource.get(source);
-      if (!artwork) return [];
-      assignedSources.add(source);
-      return [artwork];
-    }),
-  })).filter((page) => page.artworks.length > 0);
-  const unassigned = artworks.filter(
-    (artwork) => !assignedSources.has(artwork.src),
-  );
+  const ordered = EDITORIAL_ORDER.flatMap((source) => {
+    const artwork = artworkBySource.get(source);
+    if (!artwork) return [];
+    artworkBySource.delete(source);
+    return [artwork];
+  });
 
-  if (unassigned.length > 0) {
-    pages.push({ id: "additional-works", artworks: unassigned });
-  }
-
-  return pages;
+  return [...ordered, ...artworkBySource.values()];
 }
 
 function GalleryArchitecture() {
@@ -445,15 +404,14 @@ function EditorialArtwork({
 }
 
 function EditorialGallery({
-  pages,
+  artworks,
   mode,
   onOpenArtwork,
 }: {
-  pages: EditorialPage[];
+  artworks: Artwork[];
   mode: Exclude<GalleryMode, "scale">;
   onOpenArtwork: EditorialArtworkProps["onOpenArtwork"];
 }) {
-  const galleryArtworks = pages.flatMap((page) => page.artworks);
   const renderArtwork = (artwork: Artwork, artworkIndex: number) => (
     <EditorialArtwork
       artwork={artwork}
@@ -468,7 +426,7 @@ function EditorialGallery({
     return (
       <div className="compact-gallery">
         <div className="compact-gallery__grid" data-gallery-view="compact-grid">
-          {galleryArtworks.map(renderArtwork)}
+          {artworks.map(renderArtwork)}
         </div>
       </div>
     );
@@ -477,7 +435,7 @@ function EditorialGallery({
   return (
     <div className="editorial-gallery">
       <div className="editorial-gallery__grid" data-gallery-view="grid">
-        {galleryArtworks.map(renderArtwork)}
+        {artworks.map(renderArtwork)}
       </div>
     </div>
   );
@@ -495,10 +453,6 @@ function FocusedArtworkImage({
   const [isFullResolutionReady, setIsFullResolutionReady] = useState(
     !hasSeparateFullResolution,
   );
-
-  useEffect(() => {
-    setIsFullResolutionReady(!hasSeparateFullResolution);
-  }, [artwork.src, hasSeparateFullResolution, previewSrc]);
 
   return (
     <div
@@ -545,8 +499,8 @@ function FocusedArtworkImage({
 
 export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   const rooms = useMemo(() => makeScaleRooms(artworks), [artworks]);
-  const editorialPages = useMemo(
-    () => makeEditorialPages(artworks),
+  const editorialArtworks = useMemo(
+    () => orderEditorialArtworks(artworks),
     [artworks],
   );
   const galleryRef = useRef<HTMLElement>(null);
@@ -618,8 +572,9 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     [rooms.length],
   );
 
-  const commitGalleryMode = useCallback(
+  const updateGalleryMode = useCallback(
     (next: GalleryMode) => {
+      if (next === galleryModeRef.current) return;
       if (next === "scale") {
         setPixelsPerInch(getPixelsPerInch(rooms));
         setRoomIndex(0);
@@ -640,14 +595,6 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     [rooms],
   );
 
-  const updateGalleryMode = useCallback(
-    (next: GalleryMode) => {
-      if (next === galleryModeRef.current) return;
-      commitGalleryMode(next);
-    },
-    [commitGalleryMode],
-  );
-
   useEffect(() => {
     if (!isBodyScrollLocked) return;
 
@@ -662,15 +609,10 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
   useEffect(() => {
     if (!isScaleMode) return;
 
-    document.body.classList.add("scale-gallery-is-open");
     if (shouldFocusScaleRef.current) {
       shouldFocusScaleRef.current = false;
       galleryRef.current?.focus({ preventScroll: true });
     }
-
-    return () => {
-      document.body.classList.remove("scale-gallery-is-open");
-    };
   }, [isScaleMode]);
 
   useEffect(() => {
@@ -702,7 +644,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     const media = window.matchMedia(LAPTOP_MEDIA_QUERY);
 
     if (media.matches && galleryModeRef.current === "editorial") {
-      commitGalleryMode("scale");
+      updateGalleryMode("scale");
     }
 
     const handleWidthChange = (event: MediaQueryListEvent) => {
@@ -713,13 +655,13 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
 
       if (activeMode !== defaultMode) {
         pendingFocusRef.current = "gallery";
-        commitGalleryMode(defaultMode);
+        updateGalleryMode(defaultMode);
       }
     };
 
     media.addEventListener("change", handleWidthChange);
     return () => media.removeEventListener("change", handleWidthChange);
-  }, [commitGalleryMode]);
+  }, [updateGalleryMode]);
 
   useEffect(() => {
     if (!isScaleMode) return;
@@ -951,7 +893,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
         ) : (
           <EditorialGallery
             mode={isGridMode ? "grid" : "editorial"}
-            pages={editorialPages}
+            artworks={editorialArtworks}
             onOpenArtwork={openFocusedArtwork}
           />
         )}
@@ -1059,11 +1001,9 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
             ? activeArtwork
               ? `${activeArtwork.title}. Wall ${roomIndex + 1} of ${rooms.length}.`
               : `Wall ${roomIndex + 1} of ${rooms.length}.`
-            : isGridMode
+            : isGridMode || galleryView === "grid"
               ? "Artwork grid opened."
-              : galleryView === "grid"
-                ? "Artwork grid opened."
-                : "Gallery opened."}
+              : "Gallery opened."}
       </p>
     </div>
   );

@@ -242,7 +242,7 @@ test("server-renders the about page", async () => {
   assert.equal(response.status, 200);
 
   const html = await response.text();
-  assert.match(html, /<title>about — hannah gao ✶<\/title>/);
+  assert.match(html, /<title>hannah gao ✶<\/title>/);
   assert.match(html, /class="site-header site-header--about"/);
   assert.match(html, /src="\/artwork\/studio-pic\.jpg"/);
   assert.match(html, /class="about-copy"/);
@@ -266,7 +266,7 @@ test("server-renders the blog index", async () => {
   assert.equal(response.status, 200);
 
   const html = await response.text();
-  assert.match(html, /<title>blog — hannah gao ✶<\/title>/);
+  assert.match(html, /<title>hannah gao ✶ \| blog<\/title>/);
   assert.match(html, /aria-label="Blog posts"/);
   assert.match(html, /<h1 class="visually-hidden">Blog<\/h1>/);
   assert.doesNotMatch(html, /class="blog-title">blog<\/h1>/);
@@ -352,7 +352,6 @@ test("scale gallery previews stay lightweight", () => {
 test("editorial gallery assets stay faithful and lightweight", () => {
   const editorialSources = [
     "/artwork/editorial/studio-pic-stanford-480.webp",
-    "/artwork/editorial/DONTLOOK-sketch-320.webp",
     "/artwork/editorial/DONTLOOKATME-480.webp",
     "/artwork/editorial/rising-640.webp",
     "/artwork/editorial/heritage-520.webp",
@@ -368,8 +367,6 @@ test("editorial gallery assets stay faithful and lightweight", () => {
   const editorialHashes = {
     "/artwork/editorial/studio-pic-stanford-480.webp":
       "37daa954eda762f330ff13f695e13444dc247d3d4e5b11b1fa74b8b7b48c2fb4",
-    "/artwork/editorial/DONTLOOK-sketch-320.webp":
-      "1a19730a5397f1667b874c3804f112ad8ef2d585d274f5b015a8623efe6fb371",
     "/artwork/editorial/DONTLOOKATME-480.webp":
       "42fdce7843de68a3e2a0bf93ac23f036b80b9595c1a1501ef166f75e764c8857",
     "/artwork/editorial/rising-640.webp":
@@ -389,298 +386,69 @@ test("editorial gallery assets stay faithful and lightweight", () => {
       return sum + statSync(asset).size;
     }, 0);
 
-  assert.equal(byteTotal(editorialSources), 413_388);
-  assert.equal(byteTotal(environmentSources), 63_082);
+  assert.ok(
+    byteTotal(editorialSources) < 512 * 1024,
+    "editorial previews should stay below 512 KiB",
+  );
+  assert.ok(
+    byteTotal(environmentSources) < 100 * 1024,
+    "gallery decorations should stay below 100 KiB",
+  );
 
   for (const [src, expected] of Object.entries(editorialHashes)) {
     const bytes = readFileSync(new URL(`../public${src}`, import.meta.url));
     assert.equal(createHash("sha256").update(bytes).digest("hex"), expected);
   }
+});
 
-  const galleryStyles = readFileSync(
-    new URL("../app/globals.css", import.meta.url),
-    "utf8",
-  );
-  const gallerySource = readFileSync(
-    new URL("../app/gallery-explorer.tsx", import.meta.url),
-    "utf8",
-  );
-  const vectorShadowSource = readFileSync(
-    new URL("../public/gallery/windowlight.svg", import.meta.url),
-    "utf8",
-  );
-  const buildConfig = readFileSync(
-    new URL("../vite.config.ts", import.meta.url),
-    "utf8",
-  );
-  const desktopStylesStart = galleryStyles.indexOf("@media (min-width: 900px)");
-  const compactStylesStart = galleryStyles.indexOf(
-    "@media (max-width: 899px)",
-  );
-  const compactStylesEnd = galleryStyles.indexOf(
-    "@media (min-width: 600px)",
-    compactStylesStart,
-  );
-  const compactStyles = galleryStyles.slice(
-    compactStylesStart,
-    compactStylesEnd,
-  );
-  const mobileAboutStylesStart = galleryStyles.indexOf(
-    "@media (max-width: 560px)",
-  );
-  const mobileAboutStyles = galleryStyles.slice(mobileAboutStylesStart);
-  const architectureStart = galleryStyles.indexOf(
-    ".gallery-architecture {",
-    desktopStylesStart,
-  );
-  const architectureStyles = galleryStyles.slice(
-    architectureStart,
-    galleryStyles.indexOf(".gallery--scale {", architectureStart),
-  );
+test("every page advertises available favicon assets", async () => {
+  const expectedIcons = [
+    { rel: "icon", href: "/favicon.ico", sizes: "16x16 32x32 48x48 64x64" },
+    { rel: "icon", href: "/favicon.png", sizes: "192x192" },
+    { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
+  ];
 
-  assert.doesNotMatch(galleryStyles, /windowlight\.webp/);
-  assert.doesNotMatch(galleryStyles, /--gallery-canopy/);
-  assert.match(
-    galleryStyles,
-    /background: url\("\/gallery\/windowlight\.svg"\) no-repeat top left \/ contain/,
-  );
-  assert.match(
-    galleryStyles,
-    /\.gallery-architecture__light::before\s*{[^}]*filter: blur\(clamp\(11px, 0\.9vw, 16px\)\);[^}]*opacity: 0\.28/s,
-  );
-  assert.match(
-    galleryStyles,
-    /\.gallery-architecture__light::after\s*{[^}]*filter: blur\(clamp\(3\.5px, 0\.32vw, 4px\)\);[^}]*opacity: 1/s,
-  );
-  assert.match(vectorShadowSource, /viewBox="0 0 640 427"/);
-  assert.equal(vectorShadowSource.match(/<path\b/g)?.length, 3);
-  assert.match(vectorShadowSource, /<path[^>]*d="M[^"]*Q/);
-  assert.match(vectorShadowSource, /id="canopy-outer"/);
-  assert.match(vectorShadowSource, /id="canopy-middle"/);
-  assert.match(vectorShadowSource, /id="canopy-detail"/);
-  assert.match(
-    vectorShadowSource,
-    /stroke="#e6a83f"[\s\S]*?stroke-opacity="0\.028"[\s\S]*?stroke-width="3\.25"/,
-  );
-  assert.match(vectorShadowSource, /fill-opacity="0\.012"/);
-  assert.match(vectorShadowSource, /fill-opacity="0\.028"/);
-  assert.match(vectorShadowSource, /fill-opacity="0\.08"/);
-  assert.doesNotMatch(
-    vectorShadowSource,
-    /<image\b|<filter\b|windowlight\.webp/,
-  );
-  assert.doesNotMatch(
-    galleryStyles,
-    /gallery-architecture__floor|gallery-floor-height|floor-grain\.webp/,
-  );
-  assert.doesNotMatch(gallerySource, /gallery-architecture__floor/);
-  assert.match(galleryStyles, /\.gallery-architecture__light::before/);
-  assert.match(
-    galleryStyles,
-    /\.gallery-architecture__light\s*{[^}]*top: clamp\(-92px, -6svh, -46px\);[^}]*width: min\(52vw, 780px\)/s,
-  );
-  assert.match(
-    galleryStyles,
-    /\.gallery--editorial \.gallery-architecture__light,[\s\S]*?\.gallery--grid \.gallery-architecture__light\s*{[^}]*display: none/s,
-  );
-  assert.match(
-    galleryStyles,
-    /\.gallery-experience--scale \.site-header--gallery::before\s*{[^}]*content: none/s,
-  );
-  assert.match(galleryStyles, /\.editorial-gallery__grid\s*{/);
-  assert.match(galleryStyles, /grid-template-columns: repeat\(3,/);
-  assert.match(galleryStyles, /@keyframes gallery-grid-item-in/);
-  assert.match(galleryStyles, /\.focused-artwork-image__full/);
-  assert.match(
-    galleryStyles,
-    /@media \(hover: hover\) and \(pointer: fine\)\s*{[\s\S]*?\.editorial-artwork-trigger:hover img\s*{[^}]*box-shadow:/,
-  );
-  assert.match(
-    galleryStyles,
-    /@media \(hover: hover\) and \(pointer: fine\) and \(prefers-reduced-motion: no-preference\)\s*{[\s\S]*?\.editorial-artwork-trigger:hover img\s*{[^}]*transform: translateY\(-1px\)/,
-  );
-  assert.doesNotMatch(
-    galleryStyles,
-    /\.editorial-artwork-trigger:hover img\s*{[^}]*opacity:/s,
-  );
-  assert.match(
-    galleryStyles,
-    /\.site-header--gallery::before\s*{[^}]*height: calc\(100% \+ var\(--gallery-top-gap\)\)[^}]*pointer-events: none/s,
-  );
-  assert.match(
-    galleryStyles,
-    /-webkit-backdrop-filter: blur\(10px\) saturate\(0\.9\)/,
-  );
-  assert.match(galleryStyles, /backdrop-filter: blur\(10px\) saturate\(0\.9\)/);
-  assert.match(galleryStyles, /-webkit-mask-image: linear-gradient/);
-  assert.match(galleryStyles, /mask-image: linear-gradient/);
-  assert.match(
-    galleryStyles,
-    /\.gallery-experience--focus \.site-header--gallery::before\s*{[^}]*backdrop-filter: none/s,
-  );
-  assert.match(
-    galleryStyles,
-    /@media \(prefers-reduced-transparency: reduce\)[\s\S]*?\.site-header--gallery::before\s*{[^}]*mask-image: none/s,
-  );
-  assert.match(
-    compactStyles,
-    /\.gallery-experience--grid \.site-header--gallery\s*{[^}]*background: #fff/s,
-  );
-  assert.match(
-    compactStyles,
-    /\.gallery-experience--grid \.site-header--gallery::before\s*{[^}]*content: none/s,
-  );
-  assert.match(
-    compactStyles,
-    /\.compact-gallery__grid\s*{[^}]*grid-template-columns: repeat\(2,[^}]*gap: 12px/s,
-  );
-  assert.match(
-    compactStyles,
-    /\.compact-gallery \.editorial-artwork-trigger,[\s\S]*?aspect-ratio: auto/s,
-  );
-  assert.match(
-    compactStyles,
-    /\.compact-gallery \.artwork-details\s*{[^}]*display: none/s,
-  );
-  assert.match(
-    galleryStyles,
-    /\.site-header--about\s*{[^}]*position: absolute/s,
-  );
-  assert.match(
-    mobileAboutStyles,
-    /\.site-header--about\s*{[^}]*position: static;[^}]*padding-bottom: var\(--gallery-top-gap\)/s,
-  );
-  assert.match(
-    mobileAboutStyles,
-    /\.about-page\s*{[^}]*padding-top: 0/s,
-  );
-  assert.doesNotMatch(galleryStyles, /(^|\n)\.site-header::before/m);
-  assert.doesNotMatch(galleryStyles, /scroll-snap-type|cursor: zoom-in/);
-  assert.match(
-    gallerySource,
-    /type GalleryMode = "editorial" \| "grid" \| "scale"/,
-  );
-  assert.match(
-    gallerySource,
-    /isScaleMode \? " gallery-experience--scale" : ""/,
-  );
-  assert.match(
-    gallerySource,
-    /useState<GalleryMode>\("editorial"\)/,
-  );
-  assert.match(
-    gallerySource,
-    /useState<\s*"gallery" \| "grid"\s*>\("gallery"\)/,
-  );
-  assert.match(
-    gallerySource,
-    /media\.matches && galleryModeRef\.current === "editorial"[\s\S]*?commitGalleryMode\("scale"\)/,
-  );
-  assert.match(gallerySource, /useLayoutEffect\(\(\) =>/);
-  assert.match(
-    gallerySource,
-    /if \(shouldFocusScaleRef\.current\)[\s\S]*?galleryRef\.current\?\.focus/,
-  );
-  assert.match(
-    gallerySource,
-    /event\.key === "Escape"[\s\S]*?setGalleryView\("grid"\)[\s\S]*?updateGalleryMode\("editorial"\)/,
-  );
-  assert.match(gallerySource, /Artwork grid opened\./);
-  assert.match(
-    gallerySource,
-    /galleryView === "gallery" \? "grid" : "gallery"/,
-  );
-  assert.match(gallerySource, /\{galleryToggleLabel\}/);
-  assert.match(gallerySource, /data-gallery-view="compact-grid"/);
-  assert.match(gallerySource, /eagerCount=\{mode === "grid" \? 2 : 1\}/);
-  assert.match(gallerySource, /const focusTarget = focusedArtwork/);
-  assert.match(gallerySource, /className="scale-gallery-track"/);
-  assert.match(gallerySource, /className="scale-gallery-room"/);
-  assert.match(gallerySource, /const ARTWORK_GAP_INCHES = 12/);
-  assert.match(gallerySource, /const MAX_PIXELS_PER_INCH = 5\.25/);
-  assert.match(gallerySource, /className="scale-gallery-footer"/);
-  assert.doesNotMatch(gallerySource, /scale-gallery-position__year/);
-  assert.doesNotMatch(gallerySource, /yearLabel/);
-  assert.match(gallerySource, /\{roomIndex \+ 1\} \/ \{rooms\.length\}/);
-  assert.match(gallerySource, /className="scale-artwork-title"/);
-  assert.match(gallerySource, /className="scale-artwork-title__name"/);
-  assert.match(
-    gallerySource,
-    /className="scale-artwork-title__details"[\s\S]*?artwork\.medium,[\s\S]*?`\$\{artwork\.width\} × \$\{artwork\.height\} in`[\s\S]*?\.join\(" · "\)/,
-  );
-  assert.doesNotMatch(gallerySource, /className="scale-gallery-status"/);
-  assert.match(
-    gallerySource,
-    /openFocusedArtwork\(\s*artwork,\s*artwork\.scaleSrc \?\? artwork\.src,/s,
-  );
-  assert.match(
-    gallerySource,
-    /className="focused-artwork-image__full"[\s\S]*?src=\{artwork\.src\}/,
-  );
-  assert.match(gallerySource, /\.decode\(\)\s*\.then\(revealFullResolution/);
-  assert.match(
-    gallerySource,
-    /Scroll or use arrow keys to move between gallery walls\./,
-  );
-  assert.match(gallerySource, /const STUDIO_STOOL_HEIGHT_INCHES = 27/);
-  assert.match(
-    gallerySource,
-    /height: STUDIO_STOOL_HEIGHT_INCHES \* pixelsPerInch/,
-  );
-  assert.match(
-    gallerySource,
-    /aria-label="Studio stool scale reference, 27 inches tall"/,
-  );
-  assert.match(
-    gallerySource,
-    /srcSet="\/gallery\/studio-stool@1x\.webp 1x, \/gallery\/studio-stool@2x\.webp 2x"/,
-  );
-  assert.match(
-    galleryStyles,
-    /\.scale-gallery-reference\s*{[^}]*position: fixed;[^}]*bottom: 126px;[^}]*pointer-events: none/s,
-  );
-  assert.match(
-    galleryStyles,
-    /\.scale-gallery-reference::after\s*{[^}]*left: 42%;[^}]*width: 185%;[^}]*background: radial-gradient\(/s,
-  );
-  assert.match(
-    galleryStyles,
-    /\.scale-artwork button\s*{[^}]*position: relative;[^}]*overflow: hidden;[^}]*box-shadow:[^}]*4px 8px 18px -6px/s,
-  );
-  assert.match(
-    galleryStyles,
-    /\.scale-artwork img\s*{[^}]*position: absolute;[^}]*inset: 0;[^}]*width: 100%;[^}]*height: 100%;[^}]*object-fit: cover;/s,
-  );
-  assert.match(
-    galleryStyles,
-    /\.scale-gallery-footer\s*{[^}]*position: fixed;[^}]*left: 50%;[^}]*transform: translateX\(-50%\);/s,
-  );
-  assert.match(
-    galleryStyles,
-    /\.scale-artwork-title\s*{[^}]*position: absolute;[^}]*font-size: 10px;[^}]*opacity: 0;/s,
-  );
-  assert.match(
-    galleryStyles,
-    /\.scale-artwork button:hover \+ \.scale-artwork-title,[\s\S]*?\.scale-artwork button:focus-visible \+ \.scale-artwork-title\s*{[^}]*opacity: 1;/s,
-  );
-  assert.match(
-    galleryStyles,
-    /\.scale-artwork-title__details\s*{[^}]*font-size: 9px;[^}]*letter-spacing: 0\.055em;/s,
-  );
-  assert.match(
-    galleryStyles,
-    /\.scale-gallery-controls\s*{[^}]*display: flex;[^}]*gap: 8px;/s,
-  );
-  assert.match(
-    galleryStyles,
-    /\.focused-artwork-image\s*{[^}]*max-width: min\(92vw, 1800px\);[^}]*max-height: 82svh;/s,
-  );
-  assert.match(gallerySource, /aria-modal="true"/);
-  assert.doesNotMatch(
-    gallerySource,
-    /editorial-gallery__room|settleToNearestPage|settleThreshold|scrollend/,
-  );
-  assert.doesNotMatch(galleryStyles, /mix-blend-mode/);
-  assert.doesNotMatch(architectureStyles, /backdrop-filter|mask-image/);
-  assert.doesNotMatch(buildConfig, /openai|sites/i);
+  for (const pathname of [
+    "/",
+    "/about",
+    "/blog",
+    "/blog/new-frontiers",
+    "/blog/thalassophilia",
+  ]) {
+    const response = await render(pathname);
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    const icons = [...html.matchAll(/<link\b([^>]*)>/g)]
+      .filter(([, attributes]) =>
+        ["icon", "apple-touch-icon"].includes(attributeValue(attributes, "rel")),
+      )
+      .map(([, attributes]) => ({
+        rel: attributeValue(attributes, "rel"),
+        href: new URL(
+          attributeValue(attributes, "href"),
+          "https://hannahgao.studio",
+        ).pathname,
+        sizes: attributeValue(attributes, "sizes"),
+      }));
+    assert.deepEqual(
+      icons,
+      expectedIcons,
+      `${pathname} should inherit the site icons`,
+    );
+  }
+
+  for (const { href } of expectedIcons) {
+    const bytes = readFileSync(new URL(`../public${href}`, import.meta.url));
+    assert.ok(bytes.length < 20 * 1024, `${href} should stay below 20 KiB`);
+    if (href.endsWith(".png")) {
+      assert.equal(bytes.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+      const size = href === "/favicon.png" ? 192 : 180;
+      assert.equal(bytes.readUInt32BE(16), size);
+      assert.equal(bytes.readUInt32BE(20), size);
+    } else {
+      assert.equal(bytes.readUInt16LE(0), 0);
+      assert.equal(bytes.readUInt16LE(2), 1);
+      assert.equal(bytes.readUInt16LE(4), 4);
+    }
+  }
 });

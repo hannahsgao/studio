@@ -13,7 +13,6 @@ export default defineConfig(async () => {
       vinext(),
       cloudflare({
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
-        config: { main: "./worker/index.ts" },
       }),
     ],
   };

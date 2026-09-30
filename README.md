@@ -8,10 +8,10 @@ The artwork portfolio served at [hannahgao.studio](https://hannahgao.studio).
 2. Add its entry to `app/artworks.ts`, including `title`, `width`, `height`,
    `medium`, and `year`. Width and height are physical dimensions in inches.
    Set both dimensions to `null` when they should not be displayed.
-3. Add the source to `EDITORIAL_PAGES` in `app/gallery-explorer.tsx` to place it
-   on a standard gallery wall, or comment out its manifest object to hide it.
-   Add an optional `displayScale` such as `0.8` to render an image smaller
-   without changing its physical dimensions. Set `scaleView: false` for detail
+3. Add the source to `EDITORIAL_ORDER` in `app/gallery-explorer.tsx` to set its
+   position in the grid, or remove its manifest entry to hide it. Add its pixel
+   dimensions to `EDITORIAL_IMAGE_SIZES` and an optimized preview to
+   `GRID_PREVIEWS` in that file. Set `scaleView: false` for detail
    or context photographs that should remain in the standard gallery only. Use
    `scalePage` to pin a work to a particular to-scale gallery page.
 4. Push `main` to deploy through Cloudflare.
