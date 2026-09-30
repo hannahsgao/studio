@@ -1,7 +1,7 @@
 import { SiteHeader } from "../site-header";
 
 export const metadata = {
-  title: "blog — hannah gao ✶",
+  title: "hannah gao ✶ | blog",
   description: "Essays by Hannah Gao.",
 };
 
