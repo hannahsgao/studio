@@ -91,7 +91,7 @@ test("server-renders the artwork", async () => {
   );
   assert.match(html, /class="site-header site-header--gallery"/);
   assertRouteNavigation(html, "gallery");
-  assert.match(html, /src="\/signature\.png"/);
+  assert.match(html, /src="\/signature\.svg"/);
   assert.match(html, /aria-controls="gallery"/);
   assert.doesNotMatch(html, /aria-pressed=/);
   assert.match(html, /class="gallery gallery--editorial"/);

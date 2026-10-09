@@ -25,7 +25,7 @@ gallery and are omitted from the scale view.
 
 - Edit the bio in `app/about/page.tsx`.
 - The artwork with `placement: "about"` in `app/artworks.ts` is the About hero.
-- Replace `public/signature.png` to update the signature shown in the header.
+- Replace `public/signature.svg` to update the signature shown in the header.
 
 ## Work locally
 
