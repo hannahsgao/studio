@@ -361,6 +361,7 @@ function EditorialArtwork({
       style={
         {
           "--gallery-entry-delay": `${Math.min(artworkIndex, 12) * 35}ms`,
+          "--artwork-aspect-ratio": imageSize.width / imageSize.height,
         } as CSSProperties
       }
     >
@@ -759,7 +760,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
       className={`gallery-experience${
         isScaleMode ? " gallery-experience--scale" : ""
       }${
-        isGridMode ? " gallery-experience--grid" : ""
+        galleryView === "grid" ? " gallery-experience--grid" : ""
       }${focusedArtwork ? " gallery-experience--focus" : ""}`}
     >
       <SiteHeader
