@@ -24,10 +24,10 @@ export function SiteHeader({
     >
       <a className="signature-slot" href="/" aria-label="Hannah Gao — home">
         <img
-          src="/signature.svg"
+          src="/signature.svg?v=0d05a844"
           alt=""
-          width="1112"
-          height="547"
+          width="2503"
+          height="1154"
           decoding="async"
         />
       </a>
