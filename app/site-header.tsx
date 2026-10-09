@@ -26,8 +26,8 @@ export function SiteHeader({
         <img
           src="/signature.svg"
           alt=""
-          width="653"
-          height="323"
+          width="1112"
+          height="547"
           decoding="async"
         />
       </a>
