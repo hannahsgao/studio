@@ -15,6 +15,9 @@ html {
   --gallery-top-gap: clamp(10px, 1.5vw, 20px);
   --font-size-ui: 12px;
   --font-size-body: 16px;
+  --font-family-artwork-title: Georgia, "Times New Roman", serif;
+  --font-size-artwork-title: 17px;
+  --font-size-caption: 11px;
   --line-height-ui: 1.4;
   --line-height-body: 1.6;
   --artwork-shadow:
@@ -505,7 +508,7 @@ body {
 }
 
 .editorial-gallery__artwork {
-  gap: 10px;
+  gap: 12px;
 }
 
 .artwork-details {
@@ -514,9 +517,9 @@ body {
   align-items: baseline;
   justify-content: space-between;
   gap: 20px;
-  font-size: var(--font-size-ui);
-  line-height: var(--line-height-ui);
-  letter-spacing: 0.02em;
+  font-size: var(--font-size-caption);
+  line-height: 1.5;
+  letter-spacing: 0.025em;
 }
 
 .artwork-details h2,
@@ -526,7 +529,13 @@ body {
 }
 
 .artwork-details h2 {
-  font-weight: 600;
+  color: #292621;
+  font-family: var(--font-family-artwork-title);
+  font-size: var(--font-size-artwork-title);
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
 }
 
 .artwork-details p {
@@ -534,20 +543,19 @@ body {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0 14px;
-  color: #666;
+  color: #76716b;
   text-align: right;
 }
 
 .editorial-gallery__artwork .artwork-details {
   display: grid;
   width: 100%;
-  gap: 3px;
+  gap: 5px;
 }
 
 .editorial-gallery__artwork .artwork-details p {
   justify-content: flex-start;
-  gap: 0 8px;
-  font-size: 11px;
+  gap: 0 9px;
   text-align: left;
 }
 
@@ -906,9 +914,8 @@ body {
     max-width: min(220px, 24vw);
     margin: 0;
     color: rgb(32 32 32 / 72%);
-    font-family:
-      ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-size: 10px;
+    font-family: inherit;
+    font-size: var(--font-size-caption);
     font-weight: 400;
     line-height: 1.25;
     letter-spacing: 0.035em;
@@ -927,6 +934,10 @@ body {
   .scale-artwork-title__name {
     max-width: 100%;
     overflow: hidden;
+    font-family: var(--font-family-artwork-title);
+    font-size: 13px;
+    font-style: italic;
+    letter-spacing: -0.015em;
     text-overflow: ellipsis;
   }
 
