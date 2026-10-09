@@ -15,6 +15,8 @@ html {
   --gallery-top-gap: clamp(10px, 1.5vw, 20px);
   --font-size-ui: 12px;
   --font-size-body: 16px;
+  --font-size-artwork-title: 13px;
+  --font-size-caption: 11px;
   --line-height-ui: 1.4;
   --line-height-body: 1.6;
   --artwork-shadow:
@@ -217,7 +219,7 @@ body {
 }
 
 .about-hero .artwork-details {
-  margin-top: clamp(14px, 2vw, 24px);
+  margin-top: 8px;
 }
 
 .about-copy {
@@ -505,18 +507,16 @@ body {
 }
 
 .editorial-gallery__artwork {
-  gap: 10px;
+  gap: 8px;
 }
 
 .artwork-details {
-  display: flex;
+  display: grid;
   width: min(100%, 1500px);
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 20px;
-  font-size: var(--font-size-ui);
+  gap: 4px;
+  font-size: var(--font-size-caption);
   line-height: var(--line-height-ui);
-  letter-spacing: 0.02em;
+  letter-spacing: normal;
 }
 
 .artwork-details h2,
@@ -526,30 +526,17 @@ body {
 }
 
 .artwork-details h2 {
-  color: #444;
+  color: #333;
+  font-size: var(--font-size-artwork-title);
   font-weight: 400;
 }
 
 .artwork-details p {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0 14px;
   color: #777;
-  text-align: right;
 }
 
 .editorial-gallery__artwork .artwork-details {
-  display: grid;
   width: 100%;
-  gap: 3px;
-}
-
-.editorial-gallery__artwork .artwork-details p {
-  justify-content: flex-start;
-  gap: 0 8px;
-  font-size: 11px;
-  text-align: left;
 }
 
 .visually-hidden {
@@ -906,14 +893,14 @@ body {
     width: max-content;
     max-width: min(220px, 24vw);
     margin: 0;
-    color: rgb(32 32 32 / 72%);
+    color: #333;
     font-family: inherit;
-    font-size: 10px;
+    font-size: var(--font-size-artwork-title);
     font-weight: 400;
     line-height: 1.25;
-    letter-spacing: 0.035em;
+    letter-spacing: normal;
     justify-items: center;
-    gap: 2px;
+    gap: 4px;
     text-align: center;
     white-space: nowrap;
     opacity: 0;
@@ -931,9 +918,8 @@ body {
   }
 
   .scale-artwork-title__details {
-    color: rgb(32 32 32 / 48%);
-    font-size: 9px;
-    letter-spacing: 0.055em;
+    color: #777;
+    font-size: var(--font-size-caption);
   }
 
   .scale-artwork button:hover + .scale-artwork-title,
@@ -1207,12 +1193,4 @@ body {
     gap: 24px;
   }
 
-  .about-page .artwork-details {
-    gap: 12px;
-  }
-
-  .about-page .artwork-details p {
-    justify-content: flex-end;
-    text-align: right;
-  }
 }
