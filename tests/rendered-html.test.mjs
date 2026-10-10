@@ -2,6 +2,15 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import test from "node:test";
+import { artworks } from "../app/artworks.ts";
+import {
+  ARTWORK_GAP_INCHES,
+  STUDIO_STOOL_WIDTH_INCHES,
+  artworkDisplaySize,
+  getPixelsPerInch,
+  makeGallerySections,
+} from "../app/gallery-sections.ts";
+import { createWheelNavigation } from "../app/gallery-input.ts";
 
 async function render(pathname = "/") {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
@@ -105,61 +114,63 @@ test("server-renders the artwork", async () => {
     ...html.matchAll(/<source[^>]+srcSet="([^"]+)"/g),
   ].map((match) => match[1]);
 
+  assert.match(html, /<h2>In Bloom<\/h2>/);
+  assert.doesNotMatch(html, /<h2>Fresh<\/h2>/);
   assert.equal(imageSources.length, 25);
   assert.equal(new Set(imageSources).size, imageSources.length);
   assert.deepEqual(imageSources, [
     "/artwork/studio-pic-stanford.jpg",
-    "/artwork/DONTLOOKATME.jpg",
     "/artwork/DONTLOOK-sketch.jpg",
-    "/artwork/unravel.jpg",
-    "/artwork/blame.jpg",
-    "/artwork/handsoff.jpg",
-    "/artwork/rising.jpg",
+    "/artwork/DONTLOOKATME.jpg",
     "/artwork/heritage.jpg",
+    "/artwork/unravel.jpg",
     "/artwork/fresh.jpg",
-    "/artwork/bastion.jpg",
-    "/artwork/anubis-dream.jpg",
+    "/artwork/rising.jpg",
+    "/artwork/handsoff.jpg",
+    "/artwork/blame.jpg",
     "/artwork/the-walls-we-build.jpg",
-    "/artwork/wash.jpg",
-    "/artwork/mirror:rorrim.jpg",
+    "/artwork/anubis-dream.jpg",
     "/artwork/inside-out.jpg",
-    "/artwork/reflection.jpg",
+    "/artwork/wash.jpg",
     "/artwork/oasis.jpg",
+    "/artwork/mirror:rorrim.jpg",
+    "/artwork/reflection.jpg",
     "/artwork/roar.jpg",
     "/artwork/cozy.jpg",
     "/artwork/boots.jpg",
-    "/artwork/cows.jpg",
     "/artwork/pick.jpg",
     "/artwork/gotcha.jpg",
+    "/artwork/cows.jpg",
     "/artwork/still-life-egg.jpg",
     "/artwork/still-life.jpg",
+    "/artwork/bastion.jpg",
   ]);
   assert.deepEqual(gridPreviewSources, [
     "/artwork/editorial/studio-pic-stanford-480.webp",
-    "/artwork/editorial/DONTLOOKATME-480.webp",
     "/artwork/grid/DONTLOOK-sketch-640.webp",
-    "/artwork/grid/unravel-640.webp",
-    "/artwork/grid/blame-640.webp",
-    "/artwork/grid/handsoff-640.webp",
-    "/artwork/editorial/rising-640.webp",
+    "/artwork/editorial/DONTLOOKATME-480.webp",
     "/artwork/editorial/heritage-520.webp",
+    "/artwork/grid/unravel-640.webp",
     "/artwork/grid/fresh-640.webp",
-    "/artwork/editorial/bastion-480.webp",
-    "/artwork/grid/anubis-dream-640.webp",
+    "/artwork/editorial/rising-640.webp",
+    "/artwork/grid/handsoff-640.webp",
+    "/artwork/grid/blame-640.webp",
     "/artwork/grid/the-walls-we-build-640.webp",
-    "/artwork/grid/wash-640.webp",
-    "/artwork/grid/mirror:rorrim-640.webp",
+    "/artwork/grid/anubis-dream-640.webp",
     "/artwork/grid/inside-out-640.webp",
-    "/artwork/grid/reflection-640.webp",
+    "/artwork/grid/wash-640.webp",
     "/artwork/grid/oasis-640.webp",
+    "/artwork/grid/mirror:rorrim-640.webp",
+    "/artwork/grid/reflection-640.webp",
     "/artwork/grid/roar-640.webp",
     "/artwork/editorial/cozy-640.webp",
     "/artwork/grid/boots-640.webp",
-    "/artwork/grid/cows-640.webp",
     "/artwork/grid/pick-640.webp",
     "/artwork/grid/gotcha-640.webp",
+    "/artwork/grid/cows-640.webp",
     "/artwork/grid/still-life-egg-640.webp",
     "/artwork/grid/still-life-640.webp",
+    "/artwork/editorial/bastion-480.webp",
   ]);
   assert.equal(
     html.match(/class="artwork-details"/g)?.length,
@@ -235,6 +246,99 @@ test("server-renders the artwork", async () => {
   );
 
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|ruler/i);
+});
+
+
+test("exhibition sections preserve the requested artwork order and physical metadata", () => {
+  const sections = makeGallerySections(artworks.filter((artwork) => artwork.placement !== "about"));
+  assert.deepEqual(sections.map((section) => [section.title, section.artworks.map((artwork) => artwork.title)]), [
+    ["2026", ["Stanford studio", "DONTLOOK (sketch)", "DONTLOOK (weird fish)"]],
+    ["loose strings", ["Heritage", "Unravel", "In Bloom", "Rising"]],
+    ["girl", ["Hands Off", "Blame", "The Walls We Build", "Anubis Dream"]],
+    ["liminal", ["Inside Out", "Wash", "Oasis", "mirror:rorrim", "Reflection"]],
+    ["cats, sketches", ["Roar", "Cozy", "Boots", "Pick", "Gotcha", "Cows", "Still Life: Egg", "Still Life"]],
+  ]);
+  const sources = sections.flatMap((section) => section.artworks.map((artwork) => artwork.src));
+  assert.equal(sources.length, 24);
+  assert.equal(new Set(sources).size, sources.length);
+  assert.deepEqual(sections.filter((section) => section.isSalon).map((section) => section.title), ["cats, sketches"]);
+  const [studio, sketch, painting] = sections[0].artworks;
+  assert.equal(studio.width, null);
+  assert.equal(studio.height, null);
+  assert.ok(artworkDisplaySize(studio).width > 0);
+  assert.deepEqual(artworkDisplaySize(sketch), { width: 5, height: 7 });
+  assert.deepEqual(artworkDisplaySize(painting), { width: 36, height: 48 });
+});
+
+test("physical-scale walls fit laptop viewports while preserving relative dimensions", () => {
+  const sections = makeGallerySections(artworks);
+  for (const [width, height] of [[900, 400], [900, 600], [1280, 720], [1920, 1080]]) {
+    const scale = getPixelsPerInch(sections, width, height);
+    assert.ok(Number.isFinite(scale) && scale >= 1 && scale <= 8);
+    const gutter = Math.max(52, Math.min(84, width * 0.06));
+    const availableWidth = width - 2 * gutter - 28 - STUDIO_STOOL_WIDTH_INCHES * scale;
+    for (const section of sections) {
+      const sizes = section.artworks.map(artworkDisplaySize);
+      for (const size of sizes) {
+        assert.ok(size.height * scale <= height - 280 + 0.001);
+      }
+      if (!section.isSalon) {
+        const wallWidth = sizes.reduce((sum, size) => sum + size.width, 0)
+          + ARTWORK_GAP_INCHES * (sizes.length - 1);
+        assert.ok(wallWidth * scale <= availableWidth + 0.001, section.title);
+      } else {
+        // CSS lays eight drawings out in four columns and two rows.
+        const columnWidths = sizes.slice(0, 4).map((size, index) =>
+          Math.max(size.width, sizes[index + 4].width),
+        );
+        assert.ok((columnWidths.reduce((sum, size) => sum + size, 0) + 3 * 5.5) * scale <= availableWidth);
+        const salonHeight = Math.max(...sizes.slice(0, 4).map((size) => size.height))
+          + Math.max(...sizes.slice(4).map((size) => size.height)) + 5.5;
+        assert.ok(salonHeight * scale <= height - 280);
+      }
+    }
+  }
+  assert.equal(getPixelsPerInch([], 1280, 720), 8);
+});
+
+test("wheel navigation responds to small deltas and limits rapid section changes", () => {
+  const navigate = createWheelNavigation();
+  const input = (timeStamp, deltaX, deltaY = 0) => navigate({ timeStamp, deltaX, deltaY, deltaMode: 0 }, 720);
+  assert.equal(input(0, 8), 0);
+  assert.equal(input(16, 8), 0);
+  assert.equal(input(32, 8), 1);
+  assert.equal(input(48, 120), 0);
+  assert.equal(input(100, 80), 0);
+  assert.equal(input(200, 40), 0);
+  assert.equal(input(300, 6), 0);
+  assert.equal(input(400, 2), 0);
+  assert.equal(input(480, 24), 1);
+  assert.equal(input(500, -120), 0);
+  assert.equal(input(700, 3, -24), -1);
+  assert.equal(input(1000, 24, 3), 1);
+});
+
+test("sustained scrolling continues between sections without a gesture reset", () => {
+  const navigate = createWheelNavigation();
+  const input = (timeStamp, deltaX) => navigate({ timeStamp, deltaX, deltaY: 0, deltaMode: 0 }, 720);
+  assert.equal(input(0, 24), 1);
+  for (const time of [80, 160, 240, 320, 400]) {
+    assert.equal(input(time, 24), 0);
+  }
+  assert.equal(input(480, 24), 1);
+  // A fading tail is too small to advance another section after the pause.
+  for (const time of [560, 640, 720, 800, 880, 960, 1040, 1120]) {
+    assert.equal(input(time, 1), 0);
+  }
+});
+
+test("wheel navigation normalizes line and page scrolling and allows direction reversals", () => {
+  const navigate = createWheelNavigation();
+  assert.equal(navigate({ timeStamp: 0, deltaX: 0, deltaY: -2, deltaMode: 1 }, 720), -1);
+  assert.equal(navigate({ timeStamp: 300, deltaX: 0, deltaY: 1, deltaMode: 2 }, 720), 1);
+  assert.equal(navigate({ timeStamp: 600, deltaX: 18, deltaY: 0, deltaMode: 0 }, 720), 0);
+  assert.equal(navigate({ timeStamp: 620, deltaX: -10, deltaY: 0, deltaMode: 0 }, 720), 0);
+  assert.equal(navigate({ timeStamp: 640, deltaX: -14, deltaY: 0, deltaMode: 0 }, 720), -1);
 });
 
 test("server-renders the about page", async () => {

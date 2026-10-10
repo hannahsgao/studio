@@ -1,6 +1,6 @@
 export type Artwork = {
   src: string;
-  /** Optional lightweight source used only by the physical-scale wall. */
+  /** Lightweight preview for the physical-scale wall and artwork navigator. */
   scaleSrc?: string;
   title: string;
   width: number | null;
@@ -11,10 +11,6 @@ export type Artwork = {
   placement?: "gallery" | "about";
   /** Optional display-only scale: 0.8 renders the image at 80% width. */
   displayScale?: number;
-  /** Set to false for detail or context photos that are not standalone works. */
-  scaleView?: boolean;
-  /** Optional one-based page override in the to-scale gallery. */
-  scalePage?: number;
 };
 
 /**
@@ -22,7 +18,7 @@ export type Artwork = {
  *
  * - `width` and `height` are the artwork's physical dimensions in inches.
  * - Comment out an entire object to hide that work from the gallery.
- * - The gallery sorts years newest-first; this order breaks ties within a year.
+ * - Exhibition order is defined in `gallery-sections.ts`.
  * - `displayScale` changes only the on-screen image size, never its dimensions.
  */
 export const artworks: Artwork[] = [
@@ -52,7 +48,6 @@ export const artworks: Artwork[] = [
     height: 36,
     medium: "Oil on Canvas",
     year: "2023",
-    scalePage: 1,
   },
   {
     src: "/artwork/blame.jpg",
@@ -62,7 +57,6 @@ export const artworks: Artwork[] = [
     height: 24,
     medium: "Oil on Canvas",
     year: "2023",
-    scalePage: 1,
   },
   {
     src: "/artwork/rising.jpg",
@@ -72,7 +66,6 @@ export const artworks: Artwork[] = [
     height: 24,
     medium: "Oil on Board",
     year: "2024",
-    scalePage: 2,
   },
   {
     src: "/artwork/boots.jpg",
@@ -127,7 +120,6 @@ export const artworks: Artwork[] = [
     height: 24,
     medium: "Oil on Canvas",
     year: "2022",
-    scalePage: 1,
   },
   {
     src: "/artwork/studio-pic-stanford.jpg",
@@ -148,12 +140,11 @@ export const artworks: Artwork[] = [
   },
   {
     src: "/artwork/DONTLOOK-sketch.jpg",
-    title: "DONTLOOK — Sketch",
+    title: "DONTLOOK (sketch)",
     width: 5,
     height: 7,
     medium: "Oil on Paper",
     year: "2026",
-    scaleView: false,
   },
   {
     src: "/artwork/wash.jpg",
@@ -199,7 +190,6 @@ export const artworks: Artwork[] = [
     height: 48,
     medium: "Oil on Canvas",
     year: "2024",
-    scalePage: 2,
   },
   {
     src: "/artwork/mirror:rorrim.jpg",
@@ -213,7 +203,7 @@ export const artworks: Artwork[] = [
   {
     src: "/artwork/fresh.jpg",
     scaleSrc: "/artwork/scale/fresh.webp",
-    title: "Fresh",
+    title: "In Bloom",
     width: 24,
     height: 36,
     medium: "Oil on Canvas",
@@ -227,7 +217,6 @@ export const artworks: Artwork[] = [
     height: 10,
     medium: "Oil on Linen Paper",
     year: "2023",
-    scalePage: 1,
   },
   {
     src: "/artwork/inside-out.jpg",
@@ -255,7 +244,6 @@ export const artworks: Artwork[] = [
     height: 48,
     medium: "Oil on Canvas",
     year: "2021",
-    scalePage: 1,
   },
   {
     src: "/artwork/the-walls-we-build.jpg",
@@ -265,6 +253,5 @@ export const artworks: Artwork[] = [
     height: 48,
     medium: "Oil on Canvas",
     year: "2022",
-    scalePage: 2,
   },
 ];

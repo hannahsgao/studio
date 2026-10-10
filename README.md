@@ -8,18 +8,25 @@ The artwork portfolio served at [hannahgao.studio](https://hannahgao.studio).
 2. Add its entry to `app/artworks.ts`, including `title`, `width`, `height`,
    `medium`, and `year`. Width and height are physical dimensions in inches.
    Set both dimensions to `null` when they should not be displayed.
-3. Add the source to `EDITORIAL_ORDER` in `app/gallery-explorer.tsx` to set its
-   position in the grid, or remove its manifest entry to hide it. Add its pixel
+3. Add the source to a section in `GALLERY_SECTIONS` in
+   `app/gallery-sections.ts` to set its exhibition and grid order. Add its pixel
    dimensions to `EDITORIAL_IMAGE_SIZES` and an optimized preview to
-   `GRID_PREVIEWS` in that file. Set `scaleView: false` for detail
-   or context photographs that should remain in the standard gallery only. Use
-   `scalePage` to pin a work to a particular to-scale gallery page.
+   `GRID_PREVIEWS` in `app/gallery-explorer.tsx`. Works outside the named sections
+   remain available at the end of the grid.
 4. Push `main` to deploy through Cloudflare.
 
 On mobile screens, **grid** opens a compact two-column overview. On
-laptop-sized screens, **gallery** opens a relative-scale overview using these
-physical dimensions. Works without both dimensions stay in the editorial
-gallery and are omitted from the scale view.
+laptop-sized screens, **gallery** opens five exhibition sections using these
+physical dimensions, with a salon arrangement for **cats, sketches**. The
+Stanford studio photograph has a display size without physical dimensions.
+Hover or focus the bars at the lower right to preview an artwork, then select
+one to move to its section and reveal its title. Scroll horizontally or
+vertically, or use the gallery's arrow keys, to move between sections. The
+active section has a darker label. Thin SVG bars draw upward on hover,
+then reset when selected. Within the bar, arrow keys preview artworks and
+Enter selects one. Clicking elsewhere or hovering another painting dismisses
+the selected caption. Click the artwork itself to open focus mode. Reduced
+motion disables transitions.
 
 ## Update the personal site
 

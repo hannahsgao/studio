@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -13,43 +14,23 @@ import {
 import { ArtworkCaption } from "./artwork-caption";
 import type { Artwork } from "./artworks";
 import { SiteHeader } from "./site-header";
+import {
+  ARTWORK_GAP_INCHES,
+  GALLERY_SECTIONS,
+  STUDIO_STOOL_HEIGHT_INCHES,
+  STUDIO_STOOL_WIDTH_INCHES,
+  artworkDisplaySize,
+  getPixelsPerInch,
+  makeGallerySections,
+} from "./gallery-sections";
+import { GalleryNavigator } from "./gallery-navigator";
+import { createWheelNavigation } from "./gallery-input";
 
-const TARGET_WORKS_PER_WALL = 7;
-const ARTWORK_GAP_INCHES = 12;
-const MAX_PIXELS_PER_INCH = 5.25;
 const MIN_LAPTOP_WIDTH = 900;
-const STUDIO_STOOL_WIDTH_INCHES = 16;
-const STUDIO_STOOL_HEIGHT_INCHES = 27;
 const LAPTOP_MEDIA_QUERY = `(min-width: ${MIN_LAPTOP_WIDTH}px)`;
 
 type GalleryMode = "editorial" | "grid" | "scale";
-const EDITORIAL_ORDER = [
-  "/artwork/studio-pic-stanford.jpg",
-  "/artwork/DONTLOOKATME.jpg",
-  "/artwork/DONTLOOK-sketch.jpg",
-  "/artwork/unravel.jpg",
-  "/artwork/blame.jpg",
-  "/artwork/handsoff.jpg",
-  "/artwork/rising.jpg",
-  "/artwork/heritage.jpg",
-  "/artwork/fresh.jpg",
-  "/artwork/bastion.jpg",
-  "/artwork/anubis-dream.jpg",
-  "/artwork/the-walls-we-build.jpg",
-  "/artwork/wash.jpg",
-  "/artwork/mirror:rorrim.jpg",
-  "/artwork/inside-out.jpg",
-  "/artwork/reflection.jpg",
-  "/artwork/oasis.jpg",
-  "/artwork/roar.jpg",
-  "/artwork/cozy.jpg",
-  "/artwork/boots.jpg",
-  "/artwork/cows.jpg",
-  "/artwork/pick.jpg",
-  "/artwork/gotcha.jpg",
-  "/artwork/still-life-egg.jpg",
-  "/artwork/still-life.jpg",
-] as const;
+const EDITORIAL_ORDER = GALLERY_SECTIONS.flatMap((section) => section.sources);
 
 const GRID_PREVIEWS: Record<string, string> = {
   "/artwork/studio-pic-stanford.jpg":
@@ -119,149 +100,8 @@ type GalleryExplorerProps = {
   artworks: Artwork[];
 };
 
-type ScaleRoom = {
-  artworks: Artwork[];
-  widthInches: number;
-  heightInches: number;
-};
-
-type RoomPartition = {
-  cost: number;
-  sizes: number[];
-};
-
-function artworkSpan(artworks: Artwork[]) {
-  return artworks.reduce(
-    (sum, artwork, index) =>
-      sum +
-      (artwork.width ?? 0) +
-      (index > 0 ? ARTWORK_GAP_INCHES : 0),
-    0,
-  );
-}
-
-function balanceRoomSizes(artworks: Artwork[], roomCount: number) {
-  const averageCount = artworks.length / roomCount;
-  const minCount = Math.max(1, Math.floor(averageCount) - 1);
-  const maxCount = Math.ceil(averageCount) + 1;
-  const targetSpan =
-    (artworks.reduce((sum, artwork) => sum + (artwork.width ?? 0), 0) +
-      (artworks.length - roomCount) * ARTWORK_GAP_INCHES) /
-    roomCount;
-  const memo = new Map<string, RoomPartition | null>();
-
-  const solve = (start: number, roomsLeft: number): RoomPartition | null => {
-    const key = `${start}-${roomsLeft}`;
-    if (memo.has(key)) return memo.get(key) ?? null;
-
-    const remaining = artworks.length - start;
-    if (roomsLeft === 1) {
-      if (remaining < minCount || remaining > maxCount) return null;
-      const span = artworkSpan(artworks.slice(start));
-      return { cost: (span - targetSpan) ** 2, sizes: [remaining] };
-    }
-
-    let best: RoomPartition | null = null;
-    for (let count = minCount; count <= maxCount; count += 1) {
-      const after = remaining - count;
-      if (
-        after < (roomsLeft - 1) * minCount ||
-        after > (roomsLeft - 1) * maxCount
-      ) {
-        continue;
-      }
-
-      const rest = solve(start + count, roomsLeft - 1);
-      if (!rest) continue;
-      const span = artworkSpan(artworks.slice(start, start + count));
-      const candidate = {
-        cost: (span - targetSpan) ** 2 + rest.cost,
-        sizes: [count, ...rest.sizes],
-      };
-      if (!best || candidate.cost < best.cost) best = candidate;
-    }
-
-    memo.set(key, best);
-    return best;
-  };
-
-  return solve(0, roomCount)?.sizes ?? [artworks.length];
-}
-
-function makeScaleRooms(artworks: Artwork[]): ScaleRoom[] {
-  const dimensioned = artworks.filter(
-    (artwork) =>
-      artwork.width !== null &&
-      artwork.height !== null &&
-      artwork.scaleView !== false,
-  );
-  if (dimensioned.length === 0) return [];
-
-  const roomCount = Math.ceil(dimensioned.length / TARGET_WORKS_PER_WALL);
-  const roomSizes = balanceRoomSizes(dimensioned, roomCount);
-  let start = 0;
-  const roomArtworks = roomSizes.map((roomSize) => {
-    const group = dimensioned.slice(start, start + roomSize);
-    start += roomSize;
-    return group;
-  });
-  const validOverrides = dimensioned.filter(
-    (artwork) =>
-      artwork.scalePage !== undefined &&
-      Number.isInteger(artwork.scalePage) &&
-      artwork.scalePage >= 1 &&
-      artwork.scalePage <= roomCount,
-  );
-  const overriddenSources = new Set(
-    validOverrides.map((artwork) => artwork.src),
-  );
-  const chronologicalIndex = new Map(
-    dimensioned.map((artwork, index) => [artwork.src, index]),
-  );
-
-  for (const group of roomArtworks) {
-    const retained = group.filter(
-      (artwork) => !overriddenSources.has(artwork.src),
-    );
-    group.splice(0, group.length, ...retained);
-  }
-
-  for (const artwork of validOverrides) {
-    roomArtworks[(artwork.scalePage ?? 1) - 1].push(artwork);
-  }
-
-  for (const group of roomArtworks) {
-    group.sort(
-      (a, b) =>
-        (chronologicalIndex.get(a.src) ?? 0) -
-        (chronologicalIndex.get(b.src) ?? 0),
-    );
-  }
-
-  return roomArtworks.map((group) => ({
-    artworks: group,
-    widthInches: artworkSpan(group),
-    heightInches: Math.max(
-      ...group.map((artwork) => artwork.height ?? 0),
-    ),
-  }));
-}
-
-function getPixelsPerInch(rooms: ScaleRoom[]) {
-  const sideGutter = Math.max(52, Math.min(84, window.innerWidth * 0.06));
-  const availableWidth = window.innerWidth - sideGutter * 2;
-  const availableHeight = window.innerHeight - 250;
-  const widestRoom = Math.max(...rooms.map((room) => room.widthInches));
-  const tallestWork = Math.max(...rooms.map((room) => room.heightInches));
-
-  return Math.max(
-    1,
-    Math.min(
-      MAX_PIXELS_PER_INCH,
-      availableWidth / widestRoom,
-      availableHeight / tallestWork,
-    ),
-  );
+function scalePreviewSource(artwork: Artwork) {
+  return artwork.scaleSrc ?? GRID_PREVIEWS[artwork.src] ?? artwork.src;
 }
 
 function artworkLabel(artwork: Artwork) {
@@ -481,13 +321,7 @@ function FocusedArtworkImage({
           decoding="async"
           onLoad={(event) => {
             const fullResolutionImage = event.currentTarget;
-            const revealFullResolution = () => {
-              window.requestAnimationFrame(() => {
-                window.requestAnimationFrame(() => {
-                  setIsFullResolutionReady(true);
-                });
-              });
-            };
+            const revealFullResolution = () => setIsFullResolutionReady(true);
             void fullResolutionImage
               .decode()
               .then(revealFullResolution, revealFullResolution);
@@ -499,101 +333,87 @@ function FocusedArtworkImage({
 }
 
 export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
-  const rooms = useMemo(() => makeScaleRooms(artworks), [artworks]);
+  const sections = useMemo(() => makeGallerySections(artworks), [artworks]);
   const editorialArtworks = useMemo(
     () => orderEditorialArtworks(artworks),
     [artworks],
   );
   const galleryRef = useRef<HTMLElement>(null);
+  const experienceRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
-  const pendingFocusRef = useRef<"toggle" | "gallery" | null>(null);
-  const shouldFocusScaleRef = useRef(false);
-  const galleryModeRef = useRef<GalleryMode>("editorial");
-  const wheelLockRef = useRef(false);
-  const wheelResetRef = useRef<number | null>(null);
+  const touchOriginRef = useRef<{ x: number; y: number } | null>(null);
   const focusedCloseRef = useRef<HTMLButtonElement>(null);
   const focusedTriggerRef = useRef<HTMLButtonElement | null>(null);
   const focusedCloseTimerRef = useRef<number | null>(null);
-  const [galleryMode, setGalleryMode] =
-    useState<GalleryMode>("editorial");
-  const [galleryView, setGalleryView] = useState<
-    "gallery" | "grid"
-  >("gallery");
-  const [roomIndex, setRoomIndex] = useState(0);
+  const [isLaptop, setIsLaptop] = useState(false);
+  const [galleryView, setGalleryView] = useState<"gallery" | "grid">("gallery");
+  const [sectionIndex, setSectionIndex] = useState(0);
   const [pixelsPerInch, setPixelsPerInch] = useState(4);
-  const [activeArtwork, setActiveArtwork] = useState<Artwork | null>(null);
-  const [focusedArtwork, setFocusedArtwork] = useState<Artwork | null>(null);
-  const [focusedPreviewSrc, setFocusedPreviewSrc] = useState<string | null>(
-    null,
-  );
+  const [selectedSource, setSelectedSource] = useState<string | null>(null);
+  const [focusedView, setFocusedView] = useState<{
+    artwork: Artwork;
+    previewSrc: string;
+  } | null>(null);
   const [isFocusClosing, setIsFocusClosing] = useState(false);
+  const galleryMode: GalleryMode =
+    isLaptop && galleryView === "gallery"
+      ? "scale"
+      : !isLaptop && galleryView === "grid" ? "grid" : "editorial";
   const isScaleMode = galleryMode === "scale";
   const isGridMode = galleryMode === "grid";
+  const focusedArtwork = focusedView?.artwork ?? null;
   const isBodyScrollLocked = isScaleMode || focusedArtwork !== null;
+  const selectedArtwork = sections[sectionIndex]?.artworks.find(
+    (artwork) => artwork.src === selectedSource,
+  );
+  const wheelNavigation = useMemo(createWheelNavigation, [
+    isScaleMode,
+    focusedArtwork,
+  ]);
+
+  const clearFocusedView = useCallback(() => {
+    if (focusedCloseTimerRef.current !== null) {
+      window.clearTimeout(focusedCloseTimerRef.current);
+      focusedCloseTimerRef.current = null;
+    }
+    setFocusedView(null);
+    setIsFocusClosing(false);
+  }, []);
 
   const openFocusedArtwork = useCallback(
     (artwork: Artwork, previewSrc: string, trigger: HTMLButtonElement) => {
       focusedTriggerRef.current = trigger;
-      setFocusedPreviewSrc(previewSrc);
-      setFocusedArtwork(artwork);
+      setFocusedView({ artwork, previewSrc });
     },
     [],
   );
 
   const closeFocusedArtwork = useCallback(() => {
-    if (isFocusClosing) return;
-
+    if (focusedCloseTimerRef.current !== null) return;
     const finish = () => {
-      setFocusedArtwork(null);
-      setFocusedPreviewSrc(null);
+      setFocusedView(null);
       setIsFocusClosing(false);
       focusedCloseTimerRef.current = null;
     };
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-
-    if (reduceMotion) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       finish();
       return;
     }
-
     setIsFocusClosing(true);
     focusedCloseTimerRef.current = window.setTimeout(finish, 360);
-  }, [isFocusClosing]);
+  }, []);
 
-  const setRoom = useCallback(
-    (nextRoom: number) => {
-      const boundedRoom = Math.min(rooms.length - 1, Math.max(0, nextRoom));
-      setRoomIndex(boundedRoom);
-      setActiveArtwork(null);
-      setFocusedArtwork(null);
-      setFocusedPreviewSrc(null);
-    },
-    [rooms.length],
-  );
-
-  const updateGalleryMode = useCallback(
-    (next: GalleryMode) => {
-      if (next === galleryModeRef.current) return;
-      if (next === "scale") {
-        setPixelsPerInch(getPixelsPerInch(rooms));
-        setRoomIndex(0);
-        setActiveArtwork(null);
-      } else {
-        if (focusedCloseTimerRef.current !== null) {
-          window.clearTimeout(focusedCloseTimerRef.current);
-          focusedCloseTimerRef.current = null;
-        }
-        setFocusedArtwork(null);
-        setFocusedPreviewSrc(null);
-        setIsFocusClosing(false);
-        focusedTriggerRef.current = null;
+  const goToSection = useCallback(
+    (next: number) => {
+      const bounded = Math.min(sections.length - 1, Math.max(0, next));
+      if (bounded === sectionIndex || bounded < 0) return;
+      if (galleryRef.current?.contains(document.activeElement)) {
+        galleryRef.current.focus({ preventScroll: true });
       }
-      galleryModeRef.current = next;
-      setGalleryMode(next);
+      setSectionIndex(bounded);
+      setSelectedSource(null);
     },
-    [rooms],
+    [sections.length, sectionIndex],
   );
 
   useEffect(() => {
@@ -606,15 +426,6 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
       document.body.style.overflow = previousOverflow;
     };
   }, [isBodyScrollLocked]);
-
-  useEffect(() => {
-    if (!isScaleMode) return;
-
-    if (shouldFocusScaleRef.current) {
-      shouldFocusScaleRef.current = false;
-      galleryRef.current?.focus({ preventScroll: true });
-    }
-  }, [isScaleMode]);
 
   useEffect(() => {
     const focusTarget = focusedArtwork
@@ -630,138 +441,120 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
     return () => window.cancelAnimationFrame(frame);
   }, [focusedArtwork]);
 
-  useEffect(() => {
-    if (pendingFocusRef.current === null) return;
-
-    const target = pendingFocusRef.current;
-    pendingFocusRef.current = null;
-    window.requestAnimationFrame(() => {
-      if (target === "toggle") toggleRef.current?.focus();
-      else galleryRef.current?.focus({ preventScroll: true });
-    });
-  }, [galleryMode]);
-
   useLayoutEffect(() => {
     const media = window.matchMedia(LAPTOP_MEDIA_QUERY);
-
-    if (media.matches && galleryModeRef.current === "editorial") {
-      updateGalleryMode("scale");
-    }
-
+    let focusFrame = 0;
+    setIsLaptop(media.matches);
     const handleWidthChange = (event: MediaQueryListEvent) => {
-      const activeMode = galleryModeRef.current;
-      const defaultMode = event.matches ? "scale" : "editorial";
+      setIsLaptop(event.matches);
       setGalleryView("gallery");
-      shouldFocusScaleRef.current = false;
-
-      if (activeMode !== defaultMode) {
-        pendingFocusRef.current = "gallery";
-        updateGalleryMode(defaultMode);
-      }
+      setSectionIndex(0);
+      setSelectedSource(null);
+      focusedTriggerRef.current = null;
+      clearFocusedView();
+      window.cancelAnimationFrame(focusFrame);
+      focusFrame = window.requestAnimationFrame(() => {
+        galleryRef.current?.focus({ preventScroll: true });
+      });
     };
-
     media.addEventListener("change", handleWidthChange);
-    return () => media.removeEventListener("change", handleWidthChange);
-  }, [updateGalleryMode]);
-
-  useEffect(() => {
-    if (!isScaleMode) return;
-
-    const handleResize = () => setPixelsPerInch(getPixelsPerInch(rooms));
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [isScaleMode, rooms]);
-
-  useEffect(() => {
-    if (!isScaleMode) return;
-    const gallery = galleryRef.current;
-    if (!gallery) return;
-
-    const handleWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      if (wheelLockRef.current) return;
-
-      const delta =
-        Math.abs(event.deltaX) > Math.abs(event.deltaY)
-          ? event.deltaX
-          : event.deltaY;
-      if (Math.abs(delta) < 24) return;
-
-      wheelLockRef.current = true;
-      setRoom(roomIndex + (delta > 0 ? 1 : -1));
-      if (wheelResetRef.current !== null) {
-        window.clearTimeout(wheelResetRef.current);
-      }
-      wheelResetRef.current = window.setTimeout(() => {
-        wheelLockRef.current = false;
-        wheelResetRef.current = null;
-      }, 720);
+    return () => {
+      media.removeEventListener("change", handleWidthChange);
+      window.cancelAnimationFrame(focusFrame);
     };
+  }, [clearFocusedView]);
 
-    gallery.addEventListener("wheel", handleWheel, { passive: false });
-    return () => gallery.removeEventListener("wheel", handleWheel);
-  }, [isScaleMode, roomIndex, setRoom]);
+  useLayoutEffect(() => {
+    if (!isScaleMode) return;
+    let frame = 0;
+    const updateScale = () => {
+      setPixelsPerInch(
+        getPixelsPerInch(sections, window.innerWidth, window.innerHeight),
+      );
+    };
+    const handleResize = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(updateScale);
+    };
+    updateScale();
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.cancelAnimationFrame(frame);
+    };
+  }, [isScaleMode, sections]);
 
-  useEffect(
-    () => () => {
-      if (wheelResetRef.current !== null) {
-        window.clearTimeout(wheelResetRef.current);
-      }
-      if (focusedCloseTimerRef.current !== null) {
-        window.clearTimeout(focusedCloseTimerRef.current);
-      }
-    },
-    [],
-  );
+  const handleWheel = useEffectEvent((event: WheelEvent) => {
+    if (event.ctrlKey) return;
+    event.preventDefault();
+    const step = wheelNavigation(event, window.innerHeight);
+    if (step !== 0) goToSection(sectionIndex + step);
+  });
+
+  useEffect(() => {
+    if (!isScaleMode || focusedArtwork) return;
+    const gallery = experienceRef.current;
+    if (!gallery) return;
+    const listener = (event: WheelEvent) => handleWheel(event);
+    gallery.addEventListener("wheel", listener, { passive: false });
+    return () => gallery.removeEventListener("wheel", listener);
+  }, [isScaleMode, focusedArtwork]);
+
+  useEffect(() => () => {
+    if (focusedCloseTimerRef.current !== null) {
+      window.clearTimeout(focusedCloseTimerRef.current);
+    }
+  }, []);
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
     if (!isScaleMode) return;
 
     if (event.key === "Escape") {
       event.preventDefault();
-      pendingFocusRef.current = "toggle";
       setGalleryView("grid");
-      updateGalleryMode("editorial");
+      toggleRef.current?.focus({ preventScroll: true });
       return;
     }
 
     if (event.key === "ArrowRight" || event.key === "PageDown") {
       event.preventDefault();
-      setRoom(roomIndex + 1);
+      goToSection(sectionIndex + 1);
       return;
     }
 
     if (event.key === "ArrowLeft" || event.key === "PageUp") {
       event.preventDefault();
-      setRoom(roomIndex - 1);
+      goToSection(sectionIndex - 1);
       return;
     }
 
     if (event.key === "Home") {
       event.preventDefault();
-      setRoom(0);
+      goToSection(0);
       return;
     }
 
     if (event.key === "End") {
       event.preventDefault();
-      setRoom(rooms.length - 1);
+      goToSection(sections.length - 1);
     }
   };
 
   const trackStyle = {
-    transform: `translateX(${-roomIndex * 100}%)`,
+    transform: `translateX(${-sectionIndex * 100}%)`,
   } satisfies CSSProperties;
   const galleryToggleLabel =
     galleryView === "gallery" ? "grid" : "gallery";
 
   return (
     <div
+      ref={experienceRef}
       className={`gallery-experience${
         isScaleMode ? " gallery-experience--scale" : ""
       }${
         galleryView === "grid" ? " gallery-experience--grid" : ""
       }${focusedArtwork ? " gallery-experience--focus" : ""}`}
+      onClickCapture={() => setSelectedSource(null)}
     >
       <SiteHeader
         currentPage="gallery"
@@ -774,19 +567,12 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
             aria-controls="gallery"
             aria-label={`Switch to ${galleryToggleLabel} view`}
             onClick={() => {
-              const isLaptop = window.matchMedia(LAPTOP_MEDIA_QUERY).matches;
-              const nextMode =
-                galleryToggleLabel === "gallery"
-                  ? isLaptop
-                    ? "scale"
-                    : "editorial"
-                  : isLaptop
-                    ? "editorial"
-                    : "grid";
-
               setGalleryView(galleryToggleLabel);
-              shouldFocusScaleRef.current = nextMode === "scale";
-              updateGalleryMode(nextMode);
+              setSectionIndex(0);
+              setSelectedSource(null);
+              if (galleryToggleLabel === "gallery" && isLaptop) {
+                galleryRef.current?.focus({ preventScroll: true });
+              }
             }}
           >
             {galleryToggleLabel}
@@ -817,53 +603,81 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
                 : "Artwork gallery"
         }
         onKeyDown={handleKeyDown}
+        style={isScaleMode ? {
+          "--studio-stool-width": `${STUDIO_STOOL_WIDTH_INCHES * pixelsPerInch}px`,
+        } as CSSProperties : undefined}
+        onTouchStart={(event) => {
+          const touch = event.touches[0];
+          if (isScaleMode && touch) {
+            touchOriginRef.current = { x: touch.clientX, y: touch.clientY };
+          }
+        }}
+        onTouchEnd={(event) => {
+          const touch = event.changedTouches[0];
+          const origin = touchOriginRef.current;
+          touchOriginRef.current = null;
+          if (!isScaleMode || !origin || !touch) return;
+          const dx = touch.clientX - origin.x;
+          const dy = touch.clientY - origin.y;
+          if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
+            goToSection(sectionIndex + (dx < 0 ? 1 : -1));
+          }
+        }}
       >
-        <GalleryArchitecture />
+        {isScaleMode && <GalleryArchitecture />}
 
         {isScaleMode ? (
-          <div
-            className="scale-gallery-track"
-            style={trackStyle}
-          >
-            {rooms.map((room, index) => (
+          <div className="scale-gallery-track" style={trackStyle}>
+            {sections.map((section, index) => (
               <section
-                className="scale-gallery-room"
-                key={`gallery-wall-${index}`}
-                aria-label={`Gallery wall ${index + 1} of ${rooms.length}`}
-                aria-hidden={index !== roomIndex}
-                inert={index !== roomIndex}
+                className={`scale-gallery-room${section.isSalon ? " scale-gallery-room--salon" : ""}`}
+                id={`gallery-section-${section.id}`}
+                key={section.id}
+                aria-label={`${section.title}, section ${index + 1} of ${sections.length}`}
+                aria-hidden={index !== sectionIndex}
+                inert={index !== sectionIndex}
               >
                 <div
                   className="scale-gallery-wall"
-                  style={{ gap: ARTWORK_GAP_INCHES * pixelsPerInch }}
+                  style={{
+                    gap: (section.isSalon ? 5.5 : ARTWORK_GAP_INCHES) * pixelsPerInch,
+                  }}
                 >
-                  {room.artworks.map((artwork) => (
-                    <figure className="scale-artwork" key={artwork.src}>
+                  {section.artworks.map((artwork) => (
+                    <figure
+                      className={`scale-artwork${
+                        selectedSource === artwork.src ? " scale-artwork--selected" : ""
+                      }`}
+                      key={artwork.src}
+                    >
                       <button
                         type="button"
                         aria-haspopup="dialog"
                         aria-label={`Focus ${artworkLabel(artwork)}`}
                         style={{
-                          width: (artwork.width ?? 0) * pixelsPerInch,
-                          height: (artwork.height ?? 0) * pixelsPerInch,
+                          width: artworkDisplaySize(artwork).width * pixelsPerInch,
+                          height: artworkDisplaySize(artwork).height * pixelsPerInch,
                         }}
-                        onFocus={() => setActiveArtwork(artwork)}
-                        onPointerEnter={() => setActiveArtwork(artwork)}
+                        onPointerEnter={() => {
+                          if (selectedSource && selectedSource !== artwork.src) {
+                            setSelectedSource(null);
+                          }
+                        }}
                         onClick={(event) =>
                           openFocusedArtwork(
                             artwork,
-                            artwork.scaleSrc ?? artwork.src,
+                            scalePreviewSource(artwork),
                             event.currentTarget,
                           )
                         }
                       >
                         <img
-                          src={artwork.scaleSrc ?? artwork.src}
+                          src={scalePreviewSource(artwork)}
                           alt=""
                           loading={
-                            Math.abs(index - roomIndex) <= 1 ? "eager" : "lazy"
+                            Math.abs(index - sectionIndex) <= 1 ? "eager" : "lazy"
                           }
-                          fetchPriority={index === roomIndex ? "high" : "low"}
+                          fetchPriority={index === sectionIndex ? "high" : "low"}
                           decoding="async"
                         />
                       </button>
@@ -880,6 +694,7 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
                             artwork.width !== null && artwork.height !== null
                               ? `${artwork.width} × ${artwork.height} in`
                               : null,
+                            artwork.year,
                           ]
                             .filter(Boolean)
                             .join(" · ")}
@@ -899,67 +714,36 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
           />
         )}
 
-        {isScaleMode && (
-          <>
-            <ScaleReference pixelsPerInch={pixelsPerInch} />
-
-            <div className="scale-gallery-footer">
-              <nav
-                className="scale-gallery-controls"
-                aria-label="Gallery wall navigation"
-              >
-                <button
-                  type="button"
-                  aria-label="Previous gallery wall"
-                  disabled={roomIndex === 0}
-                  onClick={() => setRoom(roomIndex - 1)}
-                >
-                  <svg
-                    className="scale-gallery-chevron"
-                    viewBox="0 0 16 16"
-                    aria-hidden="true"
-                    focusable="false"
-                  >
-                    <path d="M10.25 3.5 5.75 8l4.5 4.5" />
-                  </svg>
-                </button>
-                <span className="scale-gallery-position">
-                  <span className="scale-gallery-position__count">
-                    {roomIndex + 1} / {rooms.length}
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  aria-label="Next gallery wall"
-                  disabled={roomIndex === rooms.length - 1}
-                  onClick={() => setRoom(roomIndex + 1)}
-                >
-                  <svg
-                    className="scale-gallery-chevron"
-                    viewBox="0 0 16 16"
-                    aria-hidden="true"
-                    focusable="false"
-                  >
-                    <path d="M5.75 3.5 10.25 8l-4.5 4.5" />
-                  </svg>
-                </button>
-                <span className="visually-hidden">
-                  Scroll or use arrow keys to move between gallery walls.
-                </span>
-              </nav>
-            </div>
-          </>
-        )}
+        {isScaleMode && <ScaleReference pixelsPerInch={pixelsPerInch} />}
       </main>
 
-      {focusedArtwork && focusedPreviewSrc && (
+      {isScaleMode && (
+        <div
+          inert={focusedArtwork !== null}
+          aria-hidden={focusedArtwork ? true : undefined}
+        >
+          <GalleryNavigator
+            sections={sections}
+            sectionIndex={sectionIndex}
+            selectedSource={selectedSource}
+            getPreviewSource={scalePreviewSource}
+            imageSizes={EDITORIAL_IMAGE_SIZES}
+            onSelect={(artwork, nextSectionIndex) => {
+              goToSection(nextSectionIndex);
+              setSelectedSource(artwork.src);
+            }}
+          />
+        </div>
+      )}
+
+      {focusedView && (
         <section
           className={`focused-artwork-overlay${
             isFocusClosing ? " focused-artwork-overlay--closing" : ""
           }`}
           role="dialog"
           aria-modal="true"
-          aria-label={`${focusedArtwork.title} focused view`}
+          aria-label={`${focusedView.artwork.title} focused view`}
           onPointerDown={(event) => {
             if (event.target === event.currentTarget) closeFocusedArtwork();
           }}
@@ -986,11 +770,11 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
 
           <figure className="focused-artwork">
             <FocusedArtworkImage
-              key={focusedArtwork.src}
-              artwork={focusedArtwork}
-              previewSrc={focusedPreviewSrc}
+              key={focusedView.artwork.src}
+              artwork={focusedView.artwork}
+              previewSrc={focusedView.previewSrc}
             />
-            <ArtworkCaption artwork={focusedArtwork} />
+            <ArtworkCaption artwork={focusedView.artwork} />
           </figure>
         </section>
       )}
@@ -999,9 +783,9 @@ export function GalleryExplorer({ artworks }: GalleryExplorerProps) {
         {focusedArtwork
           ? `${focusedArtwork.title} focused. Press Escape to close.`
           : isScaleMode
-            ? activeArtwork
-              ? `${activeArtwork.title}. Wall ${roomIndex + 1} of ${rooms.length}.`
-              : `Wall ${roomIndex + 1} of ${rooms.length}.`
+            ? selectedArtwork
+              ? `${selectedArtwork.title}. ${sections[sectionIndex]?.title}, section ${sectionIndex + 1} of ${sections.length}.`
+              : `${sections[sectionIndex]?.title}, section ${sectionIndex + 1} of ${sections.length}.`
             : isGridMode || galleryView === "grid"
               ? "Artwork grid opened."
               : "Gallery opened."}
