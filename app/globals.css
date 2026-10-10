@@ -13,6 +13,8 @@ html {
   --header-content-height: 44px;
   --gallery-block-padding: clamp(28px, 4vw, 64px);
   --gallery-top-gap: clamp(10px, 1.5vw, 20px);
+  --gallery-navigation-bottom: clamp(36px, 4vw, 56px);
+  --gallery-navigation-label-space: 30px;
   --font-size-ui: 12px;
   --font-size-body: 16px;
   --font-size-artwork-title: 13px;
@@ -924,7 +926,9 @@ body {
   .scale-gallery-reference {
     position: fixed;
     z-index: 3;
-    bottom: 126px;
+    bottom: calc(
+      var(--gallery-navigation-bottom) + var(--gallery-navigation-label-space)
+    );
     left: var(--page-gutter);
     margin: 0;
     pointer-events: none;
@@ -1015,9 +1019,9 @@ body {
     position: fixed;
     z-index: 20;
     right: var(--page-gutter);
-    bottom: clamp(36px, 4vw, 56px);
+    bottom: var(--gallery-navigation-bottom);
     width: max-content;
-    padding-bottom: 30px;
+    padding-bottom: var(--gallery-navigation-label-space);
     color: #4d4944;
     user-select: none;
   }

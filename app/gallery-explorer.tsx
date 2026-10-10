@@ -153,7 +153,7 @@ function ScaleReference({ pixelsPerInch }: { pixelsPerInch: number }) {
         height: STUDIO_STOOL_HEIGHT_INCHES * pixelsPerInch,
       }}
       role="img"
-      aria-label="Studio stool scale reference, 27 inches tall"
+      aria-label="Studio stool"
     >
       <img
         src="/gallery/studio-stool@1x.webp"

@@ -1,8 +1,9 @@
 import type { Artwork } from "./artworks";
 
 export const ARTWORK_GAP_INCHES = 12;
-export const STUDIO_STOOL_WIDTH_INCHES = 16;
-export const STUDIO_STOOL_HEIGHT_INCHES = 27;
+// Approximate display footprint, using the same scale as the artwork walls.
+export const STUDIO_STOOL_WIDTH_INCHES = 12;
+export const STUDIO_STOOL_HEIGHT_INCHES = 20;
 
 /** The exhibition order is independent of the chronological artwork manifest. */
 export const GALLERY_SECTIONS = [
