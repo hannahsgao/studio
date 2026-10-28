@@ -375,9 +375,9 @@ test("server-renders the blog index", async () => {
   assert.match(html, /<h1 class="visually-hidden">Blog<\/h1>/);
   assert.doesNotMatch(html, /class="blog-title">blog<\/h1>/);
   assert.match(html, /class="blog-index-list"/);
-  assert.match(html, /href="\/blog\/new-frontiers"/);
-  assert.match(html, />new frontiers<\/a>/);
-  assert.match(html, />06\.23\.2026<\/time>/);
+  assert.doesNotMatch(html, /href="\/blog\/new-frontiers"/);
+  assert.doesNotMatch(html, />new frontiers<\/a>/);
+  assert.doesNotMatch(html, />06\.23\.2026<\/time>/);
   assert.match(html, /href="\/blog\/thalassophilia"/);
   assert.match(html, />thalassophilia<\/a>/);
   assert.match(html, />12\.18\.2025<\/time>/);
