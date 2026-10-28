@@ -9,7 +9,6 @@ type SiteHeaderProps = {
 const pages = [
   { id: "gallery", href: "/", label: "gallery" },
   { id: "about", href: "/about", label: "about" },
-  { id: "blog", href: "/blog", label: "blog" },
 ] as const;
 
 export function SiteHeader({

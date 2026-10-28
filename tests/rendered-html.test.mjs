@@ -57,16 +57,11 @@ function assertRouteNavigation(html, currentPage) {
       href: "/about",
       label: "about",
     },
-    {
-      current: currentPage === "blog" ? "page" : undefined,
-      href: "/blog",
-      label: "blog",
-    },
   ];
 
   if (currentPage === "gallery") {
     assert.deepEqual(routeLinks, expectedLinks);
-    assert.equal(navigation[1].match(/<(?:a|button)\b/g)?.length, 3);
+    assert.equal(navigation[1].match(/<(?:a|button)\b/g)?.length, 2);
     assert.match(
       navigation[1],
       /<button[^>]*class="gallery-mode-toggle"[^>]*>grid<\/button>/,
